@@ -1,5 +1,6 @@
 package org.smartgym.Screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,15 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,6 +62,7 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                     modifier = Modifier.size(60.dp).background(Color(0xFFD4FF00), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
+
                     Text(userData.treinoAtual.last().toString(), fontWeight = FontWeight.Bold, fontSize = 24.sp)
                 }
             }
@@ -75,13 +70,92 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Linha de Info Cards
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             InfoCard(Icons.Default.Bolt, userData.aparelhosLivres.toString(), "Aparelhos livres", Color.Green, Modifier.weight(1f))
             InfoCard(Icons.Default.Groups, userData.pessoasEmUso.toString(), "Em uso agora", Color.Yellow, Modifier.weight(1f))
         }
 
-        // Espaço para a Bottom Bar (que já deve estar no AppNavigation)
-        Spacer(Modifier.height(80.dp))
+        Spacer(Modifier.height(32.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("SEU PROFESSOR", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            TextButton(onClick = { /* Ver todos */ }) {
+                Text("Ver todos >", color = Color(0xFFD4FF00), fontSize = 14.sp)
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size(56.dp).background(Color(0xFF2C2C2E), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        userData.professorNome.split(" ").map { it.first() }.joinToString(""),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(userData.professorNome, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Musculação", color = Color.Gray, fontSize = 14.sp)
+                    Text("Seg-Sáb 08h-14h", color = Color.DarkGray, fontSize = 12.sp)
+                }
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFD4FF00), modifier = Modifier.size(20.dp))
+                Text(" ${userData.professorNota}", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+            border = BorderStroke(1.dp, Color(0xFFD4FF00).copy(alpha = 0.3f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = Color(0xFFD4FF00),
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text("Plano Premium", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Vence em ${userData.planoVencimento}", color = Color.Gray, fontSize = 12.sp)
+                    }
+                }
+
+
+                Spacer(Modifier.weight(1f))
+
+                Text(
+                    userData.planoValor,
+                    color = Color(0xFFD4FF00),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp
+                )
+            }
+        }
+
+        Spacer(Modifier.height(120.dp))
     }
 }
