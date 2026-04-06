@@ -24,7 +24,7 @@ import smartgym.composeapp.generated.resources.compose_multiplatform
 @Preview
 fun App() {
     var DarkTheme by remember { mutableStateOf(false) }
-    val userRole = UserRole.ADMIN
+    val userRole = UserRole.PROFESSOR
     AppTheme() {
         AppNavigation(
             userRole = userRole,
