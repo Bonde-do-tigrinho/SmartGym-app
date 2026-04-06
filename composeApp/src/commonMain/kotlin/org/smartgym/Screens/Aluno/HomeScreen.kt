@@ -1,4 +1,4 @@
-package org.smartgym.Screens
+package org.smartgym.Screens.Aluno
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

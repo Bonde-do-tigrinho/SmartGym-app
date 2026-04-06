@@ -7,7 +7,12 @@ import org.smartgym.theme.AppTheme
 
 @Composable
 fun App() {
-    AppTheme {
-        AppNavigation()
+
+    var DarkTheme by remember { mutableStateOf(false) }
+    val userRole = UserRole.ADMIN
+    AppTheme() {
+        AppNavigation(
+            userRole = userRole,
+        )
     }
 }
