@@ -19,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import org.smartgym.Screens.*
+import org.smartgym.Screens.HomeScreen
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -65,8 +66,7 @@ fun AppNavigation() {
                         selected = currentRoute == screen.route,
                         onClick = {
                             navController.navigate(screen.route){
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+                                popUpTo(navController.graph.startDestinationRoute ?: Screen.Home.route) {                                    saveState = true
                                 }
                                 launchSingleTop = true
                                 restoreState = true
@@ -92,7 +92,23 @@ fun AppNavigation() {
             startDestination = Screen.Home.route
         ){
             composable(Screen.Home.route) {
-                HomeScreen(navController)
+                val usuarioLogado = UserHomeData(
+                    userName = "Leandro",
+                    treinoAtual = "TREINO A",
+                    focoTreino = "Peito e Tríceps",
+                    qtdExercicios = 5,
+                    aparelhosLivres = 12,
+                    pessoasEmUso = 4,
+                    professorNome = "Rafael Silva",
+                    professorNota = 4.9,
+                    planoVencimento = "15/04/2026",
+                    planoValor = "R$ 149,90"
+                )
+
+                HomeScreen(
+                    navController = navController,
+                    userData = usuarioLogado
+                )
             }
             composable(Screen.Aparelhos.route) {
                 AparelhosScreen(navController)
