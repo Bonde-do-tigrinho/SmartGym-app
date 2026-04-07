@@ -119,7 +119,7 @@ fun HomeAdminScreen(navController: NavController, modifier: Modifier = Modifier)
                 Text("Receita Mensal", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 // Aqui entrará o componente do KoalaPlot
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Gráfico de Barras aqui", color = MaterialTheme.colorScheme.primary)
+                    Text("Gráfico de Barras aqui")
                 }
             }
         }
