@@ -1,14 +1,14 @@
 package org.smartgym
 
 import androidx.compose.runtime.*
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import org.smartgym.theme.AppTheme
 
 @Composable
-@Preview
 fun App() {
+
     var DarkTheme by remember { mutableStateOf(false) }
-    val userRole = UserRole.ADMIN
+    val userRole = UserRole.ALUNO
     AppTheme() {
         AppNavigation(
             userRole = userRole,
