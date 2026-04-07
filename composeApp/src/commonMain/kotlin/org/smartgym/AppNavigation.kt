@@ -18,6 +18,23 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import org.smartgym.Screens.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import org.smartgym.Screens.Adm.AlunosAdminScreen
+import org.smartgym.Screens.Aluno.AparelhosScreen
+import org.smartgym.Screens.Aluno.HomeScreen
+import org.smartgym.Screens.Aluno.PagamentosScreen
+import org.smartgym.Screens.Aluno.TreinoScreen
+import org.smartgym.theme.*
+import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.Screens.Adm.HomeAdminScreen
 import org.smartgym.Screens.Aluno.*
 import org.smartgym.Screens.Professor.HomeProfessorScreen
@@ -134,6 +151,8 @@ fun NavContent(navController: NavHostController, userRole: UserRole, modifier: M
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
 
-        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
+        // Admin
+        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
+        composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier) }
     }
 }
