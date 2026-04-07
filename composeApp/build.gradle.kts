@@ -53,6 +53,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.navigation.compose)
             implementation(compose.materialIconsExtended)
+            implementation(libs.koalaplot)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
