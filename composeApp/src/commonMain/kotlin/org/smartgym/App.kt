@@ -1,17 +1,14 @@
 package org.smartgym
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.navigation.compose.rememberNavController
+import org.smartgym.Screens.Aluno.HomeScreen
 import org.smartgym.theme.AppTheme
 
 @Composable
 fun App() {
-
-    var DarkTheme by remember { mutableStateOf(false) }
-    val userRole = UserRole.ALUNO
-    AppTheme() {
-        AppNavigation(
-            userRole = userRole,
-        )
+    AppTheme {
+        AppNavigation(userRole = UserRole.ALUNO)
     }
 }
