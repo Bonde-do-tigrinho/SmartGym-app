@@ -263,6 +263,6 @@ fun NavContent(navController: NavHostController, userRole: UserRole, modifier: M
 
         // Admin
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
-        composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier) }
+        composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier)}
     }
 }
