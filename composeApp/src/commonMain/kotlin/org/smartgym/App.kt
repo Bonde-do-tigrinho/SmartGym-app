@@ -8,7 +8,7 @@ import org.smartgym.theme.AppTheme
 fun App() {
 
     var DarkTheme by remember { mutableStateOf(false) }
-    val userRole = UserRole.ADMIN
+    val userRole = UserRole.PROFESSOR
     AppTheme() {
         AppNavigation(
             userRole = userRole,

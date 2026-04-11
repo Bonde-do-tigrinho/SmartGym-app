@@ -43,6 +43,8 @@ import org.smartgym.Screens.Aluno.PagamentosScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
 import org.smartgym.theme.*
 import org.smartgym.Screens.Professor.HomeProfessorScreen
+import org.smartgym.Screens.Professor.ExerciciosScreen
+import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Adm.HomeAdminScreen
 
 
@@ -260,6 +262,11 @@ fun NavContent(navController: NavHostController, userRole: UserRole, modifier: M
 
         // Professor
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
+        composable(Screen.Exercicios.route) { ExerciciosScreen(navController) }
+        composable(Screen.Fichas.route) { FichasScreen(navController) }
+        // TODO: Adicionar as screens de Fichas e Avaliações quando forem criadas
+
+        // composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 
         // Admin
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
