@@ -2,6 +2,7 @@ package org.smartgym.Screens.Aluno
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,17 +48,21 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                 )
             }
             IconButton(
-                onClick = {},
+                onClick = { /* TODO: navController.navigate("notificacoes") */ },
                 modifier = Modifier.background(colors.surfaceVariant, CircleShape)
             ) {
-                Icon(Icons.Default.Notifications, contentDescription = null, tint = colors.onSurface)
+                Icon(Icons.Default.Notifications, contentDescription = "Notificações", tint = colors.onSurface)
             }
         }
 
         Spacer(Modifier.height(24.dp))
 
+        // Card de Treino do Dia
         Card(
-            modifier = Modifier.fillMaxWidth().height(180.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .clickable { /* TODO: navController.navigate("treino_detalhe") */ },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             shape = RoundedCornerShape(24.dp)
         ) {
@@ -78,7 +84,9 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                     Text("${userData.qtdExercicios} exercícios", color = colors.onSurfaceVariant)
                 }
                 Box(
-                    modifier = Modifier.size(60.dp).background(colors.primary, CircleShape),
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(colors.primary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -93,9 +101,34 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
 
         Spacer(Modifier.height(16.dp))
 
+        // Cards de Aparelhos e Pessoas
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            InfoCard(Icons.Default.Bolt, userData.aparelhosLivres.toString(), "Aparelhos livres", colors.primary, Modifier.weight(1f))
-            InfoCard(Icons.Default.Groups, userData.pessoasEmUso.toString(), "Em uso agora", colors.primary, Modifier.weight(1f))
+            Box(modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { /* TODO: navController.navigate("aparelhos") */ }
+            ) {
+                InfoCard(
+                    icon = Icons.Default.Bolt,
+                    value = userData.aparelhosLivres.toString(),
+                    label = "Aparelhos livres",
+                    iconColor = colors.primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Box(modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { /* TODO: navController.navigate("ocupacao") */ }
+            ) {
+                InfoCard(
+                    icon = Icons.Default.Groups,
+                    value = userData.pessoasEmUso.toString(),
+                    label = "Em uso agora",
+                    iconColor = colors.primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
 
         Spacer(Modifier.height(32.dp))
@@ -106,13 +139,16 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("SEU PROFESSOR", color = colors.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            TextButton(onClick = { }) {
+            TextButton(onClick = { /* TODO: navController.navigate("professores") */ }) {
                 Text("Ver todos >", color = colors.primary, fontSize = 14.sp)
             }
         }
 
+        // Card do Professor
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { /* TODO: navController.navigate("professor_detalhe/${userData.professorId}") */ },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -121,7 +157,9 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    modifier = Modifier.size(56.dp).background(colors.surfaceVariant, CircleShape),
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(colors.surfaceVariant, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -143,8 +181,11 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
 
         Spacer(Modifier.height(16.dp))
 
+        // Card do Plano
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { /* TODO: navController.navigate("pagamentos") */ },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.3f)),
             shape = RoundedCornerShape(16.dp)

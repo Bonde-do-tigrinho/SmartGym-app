@@ -20,14 +20,28 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import org.smartgym.Screens.Adm.HomeAdminScreen
 import org.smartgym.Screens.Aluno.*
+import org.smartgym.Screens.Auth.LoginScreen
+import org.smartgym.Screens.Auth.RegisterScreen
 import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.theme.*
 
+// Rotas de autenticação — não mostram a bottom nav
+private val rotasAuth = listOf("login", "cadastro")
+
 @Composable
-fun AppNavigation(
-    userRole: UserRole,
-) {
+fun AppNavigation() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Só mostra bottom nav fora das telas de auth e nas telas de aluno
+    val mostrarBottomNav = currentRoute !in rotasAuth &&
+            currentRoute in listOf(
+        Screen.HomeAluno.route,
+        Screen.Aparelhos.route,
+        Screen.Treino.route,
+        Screen.Pagamentos.route
+    )
 
     val items = listOf(
         Screen.HomeAluno,
@@ -50,13 +64,10 @@ fun AppNavigation(
         Screen.Pagamentos.route to "Pagamento",
     )
 
-    if (userRole == UserRole.ALUNO) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            bottomBar = {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            if (mostrarBottomNav) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp
@@ -67,7 +78,7 @@ fun AppNavigation(
                             selected = selected,
                             onClick = {
                                 navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.startDestinationRoute ?: Screen.HomeAluno.route) {
+                                    popUpTo(Screen.HomeAluno.route) {
                                         saveState = true
                                     }
                                     launchSingleTop = true
@@ -87,53 +98,58 @@ fun AppNavigation(
                                     color = if (selected) MaterialTheme.colorScheme.primary else TextGray
                                 )
                             },
-                            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent
+                            )
                         )
                     }
                 }
             }
-        ) { innerPadding ->
-            NavContent(navController, userRole, Modifier.padding(innerPadding))
         }
-    } else {
-        NavContent(navController, userRole, Modifier.padding(0.dp))
-    }
-}
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = "login", // ← Login é a primeira tela
+            modifier = Modifier.padding(innerPadding)
+        ) {
 
-@Composable
-fun NavContent(navController: NavHostController, userRole: UserRole, modifier: Modifier = Modifier) {
-    val startDest = when (userRole) {
-        UserRole.ALUNO -> Screen.HomeAluno.route
-        UserRole.ADMIN -> Screen.HomeAdmin.route
-        UserRole.PROFESSOR -> Screen.HomeProfessor.route
-    }
+            // ── Auth ──────────────────────────────────────────
+            composable("login") {
+                LoginScreen(navController)
+            }
+            composable("cadastro") {
+                RegisterScreen(navController)
+            }
 
-    NavHost(
-        navController = navController,
-        startDestination = startDest,
-        modifier = modifier
-    ) {
-        composable(Screen.HomeAluno.route) {
-            val usuarioLogado = UserHomeData(
-                userName = "Leandro",
-                treinoAtual = "TREINO A",
-                focoTreino = "Peito e Tríceps",
-                qtdExercicios = 5,
-                aparelhosLivres = 12,
-                pessoasEmUso = 4,
-                professorNome = "Rafael Silva",
-                professorNota = 4.9,
-                planoVencimento = "15/04/2026",
-                planoValor = "R$ 149,90"
-            )
-            HomeScreen(navController = navController, userData = usuarioLogado)
+            // ── Aluno ─────────────────────────────────────────
+            composable(Screen.HomeAluno.route) {
+                val usuarioLogado = UserHomeData(
+                    userName = "Leandro",
+                    treinoAtual = "TREINO A",
+                    focoTreino = "Peito e Tríceps",
+                    qtdExercicios = 5,
+                    aparelhosLivres = 12,
+                    pessoasEmUso = 4,
+                    professorNome = "Rafael Silva",
+                    professorNota = 4.9,
+                    planoVencimento = "15/04/2026",
+                    planoValor = "R$ 149,90"
+                )
+                HomeScreen(navController = navController, userData = usuarioLogado)
+            }
+            composable(Screen.Aparelhos.route) { AparelhosScreen(navController) }
+            composable(Screen.Treino.route) { TreinoScreen(navController) }
+            composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
+
+            // ── Professor ─────────────────────────────────────
+            composable(Screen.HomeProfessor.route) {
+                HomeProfessorScreen(navController)
+            }
+
+            // ── Admin ─────────────────────────────────────────
+            composable(Screen.HomeAdmin.route) {
+                HomeAdminScreen(navController)
+            }
         }
-        composable(Screen.Aparelhos.route) { AparelhosScreen(navController) }
-        composable(Screen.Treino.route) { TreinoScreen(navController) }
-        composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
-
-        composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
-
-        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
     }
 }
