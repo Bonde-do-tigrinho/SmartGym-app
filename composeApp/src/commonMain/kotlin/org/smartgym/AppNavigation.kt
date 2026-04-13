@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.navigation.NavHostController
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.rounded.Assignment
@@ -22,6 +22,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.navigation.NavHostController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -46,7 +48,7 @@ import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Adm.HomeAdminScreen
-
+import org.smartgym.Screens.Adm.UnidadesScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,8 +75,9 @@ fun AppNavigation(
         Screen.HomeAluno.route to Icons.Rounded.Home,
         Screen.Aparelhos.route to Icons.Rounded.FitnessCenter,
         Screen.Treino.route to Icons.Rounded.Assignment,
-        Screen.Pagamentos.route to Icons.Rounded. Payment,
+        Screen.Pagamentos.route to Icons.Rounded.Payment, // O espaço em branco foi removido aqui!
     )
+
     if(userRole == UserRole.ALUNO){
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -92,7 +95,8 @@ fun AppNavigation(
                             selected = currentRoute == screen.route,
                             onClick = {
                                 navController.navigate(screen.route){
-                                    popUpTo(navController.graph.startDestinationId) {
+                                    // A correção da navegação usando a importação nova
+                                    popUpTo(navController.graph.findStartDestination()) {
                                         saveState = true
                                     }
                                     launchSingleTop = true
@@ -126,19 +130,21 @@ fun AppNavigation(
 
         val adminItems = listOf(
             Screen.HomeAdmin,
-            Screen.AlunosAdmin
+            Screen.AlunosAdmin,
+            Screen.UnidadesAdmin
         )
 
         val adminLabels = mapOf(
             Screen.HomeAdmin.route to "Dashboard",
             Screen.AlunosAdmin.route to "Alunos",
+            Screen.UnidadesAdmin.route to "Unidades",
         )
 
         val adminIcons = mapOf(
             Screen.HomeAdmin.route to Icons.Outlined.Home,
             Screen.AlunosAdmin.route to Icons.Outlined.People,
-
-            )
+            Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
+        )
 
         ModalNavigationDrawer(
             drawerState = drawerState,
@@ -230,7 +236,6 @@ fun AppNavigation(
             }
         }
     }
-
 }
 
 @Composable
@@ -266,10 +271,9 @@ fun NavContent(navController: NavHostController, userRole: UserRole, modifier: M
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         // TODO: Adicionar as screens de Fichas e Avaliações quando forem criadas
 
-        // composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
-
         // Admin
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
         composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier) }
+        composable(Screen.UnidadesAdmin.route) { UnidadesScreen(modifier = modifier) }
     }
 }
