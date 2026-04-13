@@ -32,6 +32,7 @@ private val rotasAuth = listOf("login", "cadastro")
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val treinoViewModel = remember { org.smartgym.viewModel.aluno.TreinoViewModel() }
     val aparelhosViewModel = remember { org.smartgym.viewModel.aluno.AparelhosViewModel() }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -140,7 +141,7 @@ fun AppNavigation() {
                 HomeScreen(navController = navController, userData = usuarioLogado)
             }
             composable(Screen.Aparelhos.route) { AparelhosScreen(navController = navController, viewModel = aparelhosViewModel)}
-            composable(Screen.Treino.route) { TreinoScreen(navController) }
+            composable(Screen.Treino.route) { TreinoScreen(navController = navController, viewModel = treinoViewModel) }
             composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
 
             // ── Professor ─────────────────────────────────────
