@@ -4,6 +4,7 @@ data class AuthResult(val sucesso: Boolean, val mensagem: String)
 
 val mockUsuarios = mutableListOf(
     MockUsuario("Leandro Silva", "leandro@smartgym.com", "123456", "(11) 99999-0001"),
+    MockUsuario("Nicolas yanase", "prof@smartgym.com", "123456", "(11) 99999-0001"),
     MockUsuario("Admin Gym", "admin@smartgym.com", "admin123", "(11) 99999-0002")
 )
 
