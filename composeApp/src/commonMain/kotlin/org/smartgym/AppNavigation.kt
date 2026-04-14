@@ -41,6 +41,11 @@ import org.smartgym.Screens.Aluno.AparelhosScreen
 import org.smartgym.Screens.Aluno.HomeScreen
 import org.smartgym.Screens.Aluno.PagamentosScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
+import org.smartgym.Screens.Adm.HomeAdminScreen
+import org.smartgym.Screens.Aluno.*
+import org.smartgym.Screens.Auth.LoginScreen
+import org.smartgym.Screens.Auth.RegisterScreen
+import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.theme.*
 import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
@@ -50,11 +55,23 @@ import org.smartgym.Screens.Adm.HomeAdminScreen
 
 
 @OptIn(ExperimentalMaterial3Api::class)
+// Rotas de autenticação — não mostram a bottom nav
+private val rotasAuth = listOf("login", "cadastro")
+
 @Composable
-fun AppNavigation(
-    userRole: UserRole,
-) {
+fun AppNavigation() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Só mostra bottom nav fora das telas de auth e nas telas de aluno
+    val mostrarBottomNav = currentRoute !in rotasAuth &&
+            currentRoute in listOf(
+        Screen.HomeAluno.route,
+        Screen.Aparelhos.route,
+        Screen.Treino.route,
+        Screen.Pagamentos.route
+    )
 
     val items = listOf(
         Screen.HomeAluno,
@@ -83,6 +100,10 @@ fun AppNavigation(
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            if (mostrarBottomNav) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp
@@ -94,6 +115,8 @@ fun AppNavigation(
                             onClick = {
                                 navController.navigate(screen.route){
                                     popUpTo(navController.graph.startDestinationId) {
+                                navController.navigate(screen.route) {
+                                    popUpTo(Screen.HomeAluno.route) {
                                         saveState = true
                                     }
                                     launchSingleTop = true
@@ -107,6 +130,11 @@ fun AppNavigation(
                             label = {
                                 Text(labels[screen.route] ?: "",
                                     color = if(selected) MaterialTheme.colorScheme.primary else TextGray) },
+                                Text(
+                                    labels[screen.route] ?: "",
+                                    color = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                )
+                            },
                             colors = NavigationBarItemDefaults.colors(
                                 indicatorColor = Color.Transparent
                             )
@@ -273,5 +301,51 @@ fun NavContent(navController: NavHostController, userRole: UserRole, modifier: M
         // Admin
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
         composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier) }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = "login", // ← Login é a primeira tela
+            modifier = Modifier.padding(innerPadding)
+        ) {
+
+            // ── Auth ──────────────────────────────────────────
+            composable("login") {
+                LoginScreen(navController)
+            }
+            composable("cadastro") {
+                RegisterScreen(navController)
+            }
+
+            // ── Aluno ─────────────────────────────────────────
+            composable(Screen.HomeAluno.route) {
+                val usuarioLogado = UserHomeData(
+                    userName = "Leandro",
+                    treinoAtual = "TREINO A",
+                    focoTreino = "Peito e Tríceps",
+                    qtdExercicios = 5,
+                    aparelhosLivres = 12,
+                    pessoasEmUso = 4,
+                    professorNome = "Rafael Silva",
+                    professorNota = 4.9,
+                    planoVencimento = "15/04/2026",
+                    planoValor = "R$ 149,90"
+                )
+                HomeScreen(navController = navController, userData = usuarioLogado)
+            }
+            composable(Screen.Aparelhos.route) { AparelhosScreen(navController) }
+            composable(Screen.Treino.route) { TreinoScreen(navController) }
+            composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
+
+            // ── Professor ─────────────────────────────────────
+            composable(Screen.HomeProfessor.route) {
+                HomeProfessorScreen(navController)
+            }
+
+            // ── Admin ─────────────────────────────────────────
+            composable(Screen.HomeAdmin.route) {
+                HomeAdminScreen(navController)
+            }
+        }
     }
 }
