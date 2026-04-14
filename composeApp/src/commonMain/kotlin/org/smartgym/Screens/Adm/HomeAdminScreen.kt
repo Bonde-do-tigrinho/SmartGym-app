@@ -109,20 +109,18 @@ fun HomeAdminScreen(navController: NavController, modifier: Modifier = Modifier)
         KpiCard("Unidades", "Em operação", "3", "0", Icons.Rounded.Business, Color.Magenta, isPositive = true)
         KpiCard("Receita Mensal", "Previsão de fechamento", "R$ 67k", "14", Icons.Rounded.ShowChart, Color.Yellow)
 
-        // Espaço para o Gráfico da Receita (Usando KoalaPlot futuramente)
-        Card(
-            modifier = Modifier.fillMaxWidth().height(300.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Receita Mensal", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                // Aqui entrará o componente do KoalaPlot
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Gráfico de Barras aqui")
-                }
-            }
-        }
+
+        RevenueBarChart(
+            data = listOf(
+                ChartItem("Jan", 42000f),
+                ChartItem("Fev", 52000f),
+                ChartItem("Mar", 47000f),
+                ChartItem("Abr", 61000f),
+                ChartItem("Mai", 56000f),
+                ChartItem("Jun", 67000f),
+            )
+        )
+
 
         GradientCard(
             "Taxa de Frequência", "78%", Icons.Rounded.Timeline,
@@ -137,6 +135,7 @@ fun HomeAdminScreen(navController: NavController, modifier: Modifier = Modifier)
             Brush.linearGradient(listOf(Color(0xFF9C27B0), Color(0xFF7B1FA2)))
         )
 
-        Spacer(Modifier.height(32.dp)) // Espaço extra no final do scroll
+        Spacer(Modifier.height(32.dp))
     }
 }
+
