@@ -23,10 +23,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import org.smartgym.Screen
+import org.smartgym.UserRole
 import org.smartgym.auth.MockAuth
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController? = null,  // ← Mantém compatibilidade
+    onLoginSuccess: ((UserRole) -> Unit)? = null  // ← Novo callback
+) {
     val colors = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -154,27 +158,57 @@ fun LoginScreen(navController: NavController) {
                     } else {
                         carregando = true
                         scope.launch {
-                            val resultado = MockAuth.login(email, senha)
-                            carregando = false
-                            if (resultado.sucesso) {
-                                snackbarHostState.showSnackbar("✅ Login efetuado com sucesso!")
+                            try {
+                                // ✅ NOVO: MockAuth.login() agora retorna papel
+                                val resultado = MockAuth.login(email, senha)
+                                carregando = false
 
-                                val destino = when (MockAuth.getRoleByEmail(email)) {
-                                    "admin"     -> Screen.HomeAdmin.route
-                                    "professor" -> Screen.HomeProfessor.route
-                                    else        -> Screen.HomeAluno.route
+                                if (resultado.sucesso && resultado.papel != null) {
+                                    // ✅ Login com sucesso!
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("✅ Login efetuado com sucesso!")
+                                    }
+
+                                    // ✅ NOVO: Converter papel para UserRole
+                                    val userRole = when (resultado.papel) {
+                                        "aluno" -> UserRole.ALUNO
+                                        "professor" -> UserRole.PROFESSOR
+                                        "admin" -> UserRole.ADMIN
+                                        else -> return@launch
+                                    }
+
+                                    // ✅ NOVO: Se houver callback (novo padrão), use-o
+                                    if (onLoginSuccess != null) {
+                                        onLoginSuccess(userRole)
+                                    } else if (navController != null) {
+                                        // ✅ FALLBACK: Se houver navController (padrão antigo), navege
+                                        val destino = when (resultado.papel) {
+                                            "admin" -> Screen.HomeAdmin.route
+                                            "professor" -> Screen.HomeProfessor.route
+                                            else -> Screen.HomeAluno.route
+                                        }
+                                        navController.navigate(destino) {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    }
+                                } else {
+                                    // ❌ Erro no login
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("❌ ${resultado.mensagem}")
+                                    }
                                 }
-                                navController.navigate(destino) {
-                                    popUpTo("login") { inclusive = true }
+                            } catch (e: Exception) {
+                                carregando = false
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("❌ Erro: ${e.message}")
                                 }
-                            } else {
-                                snackbarHostState.showSnackbar("❌ ${resultado.mensagem}")
                             }
                         }
                     }
                 },
-
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.primary,
@@ -201,7 +235,7 @@ fun LoginScreen(navController: NavController) {
             ) {
                 Text("Não tem uma conta? ", color = colors.onSurfaceVariant, fontSize = 14.sp)
                 TextButton(
-                    onClick = { navController.navigate("cadastro") },
+                    onClick = { navController?.navigate("cadastro") },
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text("Crie agora!", color = colors.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)

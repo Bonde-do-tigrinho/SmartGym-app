@@ -1,18 +1,37 @@
 package org.smartgym.auth
 
-data class AuthResult(val sucesso: Boolean, val mensagem: String)
+data class AuthResult(val sucesso: Boolean, val mensagem: String, val papel: String? = null)
 
 val mockUsuarios = mutableListOf(
-    MockUsuario("Leandro Silva", "leandro@smartgym.com", "123456", "(11) 99999-0001"),
-    MockUsuario("Nicolas yanase", "prof@smartgym.com", "123456", "(11) 99999-0001"),
-    MockUsuario("Admin Gym", "admin@smartgym.com", "admin123", "(11) 99999-0002")
+    MockUsuario(
+        nome = "Leandro Silva",
+        email = "leandro@smartgym.com",
+        senha = "123456",
+        telefone = "(11) 99999-0001",
+        papel = "aluno"
+    ),
+    MockUsuario(
+        nome = "Rafael Silva",
+        email = "prof@smartgym.com",
+        senha = "prof123",
+        telefone = "(11) 99999-0002",
+        papel = "professor"
+    ),
+    MockUsuario(
+        nome = "Admin Gym",
+        email = "admin@smartgym.com",
+        senha = "admin123",
+        telefone = "(11) 99999-0003",
+        papel = "admin"
+    )
 )
 
 data class MockUsuario(
     val nome: String,
     val email: String,
     val senha: String,
-    val telefone: String
+    val telefone: String,
+    val papel: String
 )
 
 object MockAuth {
@@ -59,9 +78,18 @@ object MockAuth {
         }
 
         return if (usuario != null) {
-            AuthResult(sucesso = true, mensagem = "Bem-vindo, ${usuario.nome}!")
+            // ✅ RETORNA: sucesso, mensagem e PAPEL DO USUÁRIO
+            AuthResult(
+                sucesso = true,
+                mensagem = "Bem-vindo, ${usuario.nome}!",
+                papel = usuario.papel  // 👈 IMPORTANTE: papel aqui
+            )
         } else {
-            AuthResult(sucesso = false, mensagem = "Email ou senha incorretos")
+            AuthResult(
+                sucesso = false,
+                mensagem = "Email ou senha incorretos",
+                papel = null
+            )
         }
     }
 
@@ -71,14 +99,30 @@ object MockAuth {
         telefone: String,
         senha: String
     ): AuthResult {
-        kotlinx.coroutines.delay(1500) // simula latência de rede
+        kotlinx.coroutines.delay(1500)
 
         val jaExiste = mockUsuarios.any { it.email.lowercase() == email.lowercase() }
         if (jaExiste) {
-            return AuthResult(sucesso = false, mensagem = "Este email já está cadastrado")
+            return AuthResult(
+                sucesso = false,
+                mensagem = "Este email já está cadastrado",
+                papel = null
+            )
         }
 
-        mockUsuarios.add(MockUsuario(nome, email, senha, telefone))
-        return AuthResult(sucesso = true, mensagem = "Conta criada com sucesso!")
+        mockUsuarios.add(
+            MockUsuario(
+                nome = nome,
+                email = email,
+                senha = senha,
+                telefone = telefone,
+                papel = "aluno"
+            )
+        )
+        return AuthResult(
+            sucesso = true,
+            mensagem = "Conta criada com sucesso!",
+            papel = "aluno"
+        )
     }
 }
