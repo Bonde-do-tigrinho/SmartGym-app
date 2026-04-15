@@ -27,14 +27,19 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
+import org.smartgym.Screens.Adm.EditarAlunoScreen
 import org.smartgym.Screens.Adm.HomeAdminScreen
+import org.smartgym.Screens.Adm.NovoAlunoScreen
 import org.smartgym.Screens.Adm.UnidadesScreen
 import org.smartgym.Screens.Aluno.AparelhosScreen
 import org.smartgym.Screens.Aluno.HomeScreen
@@ -45,7 +50,10 @@ import org.smartgym.Screens.Professor.AvaliacoesScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Professor.HomeProfessorScreen
+import org.smartgym.viewModel.aluno.AparelhosViewModel
+import org.smartgym.viewModel.aluno.TreinoViewModel
 import org.smartgym.theme.TextGray
+import org.smartgym.viewModel.Adm.AlunosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,6 +180,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
             )
+            val alunosViewModel: AlunosViewModel = viewModel()
 
             ModalNavigationDrawer(
                 drawerState = drawerState,
@@ -243,8 +252,9 @@ fun NavContent(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val treinoViewModel = remember { org.smartgym.viewModel.aluno.TreinoViewModel() }
-    val aparelhosViewModel = remember { org.smartgym.viewModel.aluno.AparelhosViewModel() }
+    val treinoViewModel = remember { TreinoViewModel() }
+    val aparelhosViewModel = remember { AparelhosViewModel() }
+    val alunosViewModel = remember { AlunosViewModel() }
     NavHost(
         navController = navController,
         startDestination = when (userRole) {
@@ -271,8 +281,19 @@ fun NavContent(
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 
-        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
-        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, modifier) }
-        composable(Screen.UnidadesAdmin.route) { UnidadesScreen(modifier = modifier) }
+        // ────────────────────────────────────────────────────
+        // ADMIN
+        // ────────────────────────────────────────────────────
+        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
+        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, viewModel = alunosViewModel) }
+        composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
+        composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
+        composable(
+            route = Screen.EditarAluno.route + "/{alunoId}",
+            arguments = listOf(navArgument("alunoId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val alunoId = backStackEntry.arguments?.getInt("alunoId") ?: return@composable
+            EditarAlunoScreen(navController, alunoId, viewModel = alunosViewModel)
+        }
     }
 }

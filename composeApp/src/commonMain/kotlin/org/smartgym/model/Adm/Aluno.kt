@@ -1,13 +1,13 @@
-package org.smartgym.Screens.Adm.Models
-
-import androidx.compose.ui.graphics.Color
+package org.smartgym.model.Adm
 
 data class Aluno(
     val id: Int,
     val nome: String,
     val email: String,
     val telefone: String,
+    val cpf: String,
     val plano: String,
+    val status: Boolean,
     val treinoAtual: String?,
     val focoTreino: String?,
     val planoVencimento: String?,

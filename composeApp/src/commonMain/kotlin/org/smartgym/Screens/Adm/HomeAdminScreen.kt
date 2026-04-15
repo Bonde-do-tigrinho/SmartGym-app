@@ -3,10 +3,10 @@ package org.smartgym.Screens.Adm
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -14,7 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import org.smartgym.viewModel.Adm.HomeAdminViewModel
 
 @Composable
 fun KpiCard(
@@ -80,7 +82,14 @@ fun GradientCard(
     }
 }
 @Composable
-fun HomeAdminScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun HomeAdminScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    viewModel: HomeAdminViewModel = viewModel()
+) {
+    val kpiItems by viewModel.kpiItems.collectAsState()
+    val chartData by viewModel.chartData.collectAsState()
+    val gradientItems by viewModel.gradientItems.collectAsState()
     val scrollState = rememberScrollState()
 
     Column(
@@ -104,38 +113,29 @@ fun HomeAdminScreen(navController: NavController, modifier: Modifier = Modifier)
             )
         }
 
-        KpiCard("Total de Alunos", "Crescimento este mês", "589", "12", Icons.Rounded.People, Color.Blue)
-        KpiCard("Instrutores", "Ativos no sistema", "24", "2", Icons.Rounded.Person, Color.Green)
-        KpiCard("Unidades", "Em operação", "3", "0", Icons.Rounded.Business, Color.Magenta, isPositive = true)
-        KpiCard("Receita Mensal", "Previsão de fechamento", "R$ 67k", "14", Icons.Rounded.ShowChart, Color.Yellow)
-
-
-        RevenueBarChart(
-            data = listOf(
-                ChartItem("Jan", 42000f),
-                ChartItem("Fev", 52000f),
-                ChartItem("Mar", 47000f),
-                ChartItem("Abr", 61000f),
-                ChartItem("Mai", 56000f),
-                ChartItem("Jun", 67000f),
+        kpiItems.forEach { item ->
+            KpiCard(
+                title = item.title,
+                subtitle = item.subtitle,
+                value = item.value,
+                badgeValue = item.badgeValue,
+                icon = item.icon,
+                iconColor = item.iconColor,
+                isPositive = item.isPositive
             )
-        )
+        }
 
+        RevenueBarChart(data = chartData)
 
-        GradientCard(
-            "Taxa de Frequência", "78%", Icons.Rounded.Timeline,
-            Brush.linearGradient(listOf(Color(0xFF2196F3), Color(0xFF1976D2)))
-        )
-        GradientCard(
-            "Taxa de Renovação", "92%", Icons.Rounded.CreditCard,
-            Brush.linearGradient(listOf(Color(0xFF4CAF50), Color(0xFF388E3C)))
-        )
-        GradientCard(
-            "Crescimento Anual", "24%", Icons.Rounded.TrendingUp,
-            Brush.linearGradient(listOf(Color(0xFF9C27B0), Color(0xFF7B1FA2)))
-        )
+        gradientItems.forEach { item ->
+            GradientCard(
+                title = item.title,
+                value = item.value,
+                icon = item.icon,
+                gradient = item.gradient
+            )
+        }
 
         Spacer(Modifier.height(32.dp))
     }
 }
-
