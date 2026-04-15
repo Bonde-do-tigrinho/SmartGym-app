@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.navigation.NavHostController
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
@@ -19,14 +18,6 @@ import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.navigation.NavHostController
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import org.smartgym.Screens.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +33,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
 import org.smartgym.Screens.Adm.HomeAdminScreen
+import org.smartgym.Screens.Adm.UnidadesScreen
 import org.smartgym.Screens.Aluno.AparelhosScreen
 import org.smartgym.Screens.Aluno.HomeScreen
 import org.smartgym.Screens.Aluno.PagamentosScreen
@@ -51,11 +43,8 @@ import org.smartgym.Screens.Auth.RegisterScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
-import org.smartgym.Screens.Adm.HomeAdminScreen
-import org.smartgym.Screens.Adm.UnidadesScreen
 import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.theme.TextGray
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +53,6 @@ fun AppNavigation(userRole: UserRole) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Rotas que mostram bottom nav (apenas aluno)
     val rotasComBottomNav = listOf(
         Screen.HomeAluno.route,
         Screen.Aparelhos.route,
@@ -148,7 +136,6 @@ fun AppNavigation(userRole: UserRole) {
             }
         }
 
-
         UserRole.PROFESSOR -> {
             NavContent(
                 navController = navController,
@@ -164,23 +151,23 @@ fun AppNavigation(userRole: UserRole) {
             val drawerState = rememberDrawerState(DrawerValue.Closed)
             val scope = rememberCoroutineScope()
 
-        val adminItems = listOf(
-            Screen.HomeAdmin,
-            Screen.AlunosAdmin,
-            Screen.UnidadesAdmin
-        )
+            val adminItems = listOf(
+                Screen.HomeAdmin,
+                Screen.AlunosAdmin,
+                Screen.UnidadesAdmin
+            )
 
-        val adminLabels = mapOf(
-            Screen.HomeAdmin.route to "Dashboard",
-            Screen.AlunosAdmin.route to "Alunos",
-            Screen.UnidadesAdmin.route to "Unidades",
-        )
+            val adminLabels = mapOf(
+                Screen.HomeAdmin.route to "Dashboard",
+                Screen.AlunosAdmin.route to "Alunos",
+                Screen.UnidadesAdmin.route to "Unidades",
+            )
 
-        val adminIcons = mapOf(
-            Screen.HomeAdmin.route to Icons.Outlined.Home,
-            Screen.AlunosAdmin.route to Icons.Outlined.People,
-            Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
-        )
+            val adminIcons = mapOf(
+                Screen.HomeAdmin.route to Icons.Outlined.Home,
+                Screen.AlunosAdmin.route to Icons.Outlined.People,
+                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
+            )
 
             ModalNavigationDrawer(
                 drawerState = drawerState,
@@ -288,7 +275,6 @@ fun AppNavigation(userRole: UserRole) {
             }
         }
     }
-
 }
 
 @Composable
@@ -336,11 +322,11 @@ fun NavContent(
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 
-        // composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
-
-        // Admin
+        // ────────────────────────────────────────────────────
+        // ADMIN
+        // ────────────────────────────────────────────────────
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
-        composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier) }
+        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, modifier) }
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen(modifier = modifier) }
     }
 }
