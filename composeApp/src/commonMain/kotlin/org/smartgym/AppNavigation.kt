@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Payment
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,9 +39,8 @@ import org.smartgym.Screens.Adm.UnidadesScreen
 import org.smartgym.Screens.Aluno.AparelhosScreen
 import org.smartgym.Screens.Aluno.HomeScreen
 import org.smartgym.Screens.Aluno.PagamentosScreen
+import org.smartgym.Screens.Aluno.PerfilAlunoScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
-import org.smartgym.Screens.Auth.LoginScreen
-import org.smartgym.Screens.Auth.RegisterScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
@@ -49,7 +49,7 @@ import org.smartgym.theme.TextGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(userRole: UserRole) {
+fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -58,7 +58,8 @@ fun AppNavigation(userRole: UserRole) {
         Screen.HomeAluno.route,
         Screen.Aparelhos.route,
         Screen.Treino.route,
-        Screen.Pagamentos.route
+        Screen.Pagamentos.route,
+        Screen.PerfilAluno.route
     )
 
     val mostrarBottomNav = currentRoute in rotasComBottomNav
@@ -68,6 +69,7 @@ fun AppNavigation(userRole: UserRole) {
         Screen.Aparelhos,
         Screen.Treino,
         Screen.Pagamentos,
+        Screen.PerfilAluno
     )
 
     val labels = mapOf(
@@ -75,6 +77,7 @@ fun AppNavigation(userRole: UserRole) {
         Screen.Aparelhos.route to "Aparelhos",
         Screen.Treino.route to "Treino",
         Screen.Pagamentos.route to "Pagamento",
+        Screen.PerfilAluno.route to "Perfil"
     )
 
     val icons = mapOf(
@@ -82,6 +85,7 @@ fun AppNavigation(userRole: UserRole) {
         Screen.Aparelhos.route to Icons.Rounded.FitnessCenter,
         Screen.Treino.route to Icons.Rounded.Assignment,
         Screen.Pagamentos.route to Icons.Rounded.Payment,
+        Screen.PerfilAluno.route to Icons.Rounded.Person
     )
 
     when (userRole) {
@@ -132,6 +136,7 @@ fun AppNavigation(userRole: UserRole) {
                 NavContent(
                     navController = navController,
                     userRole = userRole,
+                    onLogout = onLogout,
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -141,13 +146,11 @@ fun AppNavigation(userRole: UserRole) {
             NavContent(
                 navController = navController,
                 userRole = userRole,
+                onLogout = onLogout,
                 modifier = Modifier.padding(16.dp)
             )
         }
 
-        // ═════════════════════════════════════════════════════
-        // ADMIN - Com navigation drawer
-        // ═════════════════════════════════════════════════════
         UserRole.ADMIN -> {
             val drawerState = rememberDrawerState(DrawerValue.Closed)
             val scope = rememberCoroutineScope()
@@ -179,24 +182,10 @@ fun AppNavigation(userRole: UserRole) {
                             modifier = Modifier.padding(horizontal = 16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                "GYM",
-                                modifier = Modifier.padding(1.dp),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSecondary
-                            )
-                            Text(
-                                ".",
-                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                            Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                         }
-                        Text(
-                            "Área do Gerente",
-                            modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("Área do Gerente", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                         Spacer(Modifier.height(8.dp))
 
@@ -204,20 +193,11 @@ fun AppNavigation(userRole: UserRole) {
                             val selected = currentRoute == screen.route
                             NavigationDrawerItem(
                                 shape = RoundedCornerShape(15.dp),
-                                label = {
-                                    Text(
-                                        adminLabels[screen.route] ?: "",
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
-                                    )
-                                },
-                                icon = {
-                                    Icon(adminIcons[screen.route] ?: Icons.Default.Home, contentDescription = null)
-                                },
+                                label = { Text(adminLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                icon = { Icon(adminIcons[screen.route] ?: Icons.Default.Home, contentDescription = null) },
                                 selected = selected,
                                 onClick = {
-                                    navController.navigate(screen.route) {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate(screen.route) { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
@@ -238,40 +218,18 @@ fun AppNavigation(userRole: UserRole) {
                     topBar = {
                         TopAppBar(
                             title = {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 0.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "GYM",
-                                        modifier = Modifier.padding(1.dp),
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = MaterialTheme.colorScheme.onSecondary
-                                    )
-                                    Text(
-                                        ".",
-                                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                Row(modifier = Modifier.padding(horizontal = 0.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                    Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                                 }
                             },
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ),
+                            navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
+                            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                             modifier = Modifier.shadow(elevation = 5.dp)
                         )
                     }
                 ) { padding ->
-                    NavContent(
-                        navController = navController,
-                        userRole = userRole,
-                        modifier = Modifier.padding(padding),
-                    )
+                    NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding))
                 }
             }
         }
@@ -282,6 +240,7 @@ fun AppNavigation(userRole: UserRole) {
 fun NavContent(
     navController: NavHostController,
     userRole: UserRole,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val treinoViewModel = remember { org.smartgym.viewModel.aluno.TreinoViewModel() }
@@ -295,41 +254,25 @@ fun NavContent(
         },
         modifier = modifier
     ) {
-        // ────────────────────────────────────────────────────
-        // ALUNO
-        // ────────────────────────────────────────────────────
         composable(Screen.HomeAluno.route) {
-            val usuarioLogado = UserHomeData(
-                userName = "Leandro",
-                treinoAtual = "TREINO A",
-                focoTreino = "Peito e Tríceps",
-                qtdExercicios = 5,
-                aparelhosLivres = 12,
-                pessoasEmUso = 4,
-                professorNome = "Rafael Silva",
-                professorNota = 4.9,
-                planoVencimento = "15/04/2026",
-                planoValor = "R$ 149,90"
-            )
+            val usuarioLogado = UserHomeData("Leandro", "TREINO A", "Peito e Tríceps", 5, 12, 4, "Rafael Silva", 4.9, "15/04/2026", "R$ 149,90")
             HomeScreen(navController = navController, userData = usuarioLogado)
         }
         composable(Screen.Aparelhos.route) { AparelhosScreen(navController = navController, viewModel = aparelhosViewModel) }
         composable(Screen.Treino.route) { TreinoScreen(navController = navController, viewModel = treinoViewModel) }
         composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
 
-        // ────────────────────────────────────────────────────
-        // PROFESSOR
-        // ────────────────────────────────────────────────────
+        composable(Screen.PerfilAluno.route) {
+            PerfilAlunoScreen(navController = navController, onLogout = onLogout)
+        }
+
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
         composable(Screen.Exercicios.route) { ExerciciosScreen(navController) }
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 
-        // ────────────────────────────────────────────────────
-        // ADMIN
-        // ────────────────────────────────────────────────────
-        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
-        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController) }
-        composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
+        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
+        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, modifier) }
+        composable(Screen.UnidadesAdmin.route) { UnidadesScreen(modifier = modifier) }
     }
 }
