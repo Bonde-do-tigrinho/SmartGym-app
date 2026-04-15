@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -283,6 +284,8 @@ fun NavContent(
     userRole: UserRole,
     modifier: Modifier = Modifier
 ) {
+    val treinoViewModel = remember { org.smartgym.viewModel.aluno.TreinoViewModel() }
+    val aparelhosViewModel = remember { org.smartgym.viewModel.aluno.AparelhosViewModel() }
     NavHost(
         navController = navController,
         startDestination = when (userRole) {
@@ -310,8 +313,8 @@ fun NavContent(
             )
             HomeScreen(navController = navController, userData = usuarioLogado)
         }
-        composable(Screen.Aparelhos.route) { AparelhosScreen(navController) }
-        composable(Screen.Treino.route) { TreinoScreen(navController) }
+        composable(Screen.Aparelhos.route) { AparelhosScreen(navController = navController, viewModel = aparelhosViewModel) }
+        composable(Screen.Treino.route) { TreinoScreen(navController = navController, viewModel = treinoViewModel) }
         composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
 
         // ────────────────────────────────────────────────────
