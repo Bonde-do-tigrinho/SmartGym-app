@@ -270,7 +270,7 @@ fun AppNavigation(userRole: UserRole) {
                     NavContent(
                         navController = navController,
                         userRole = userRole,
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier.padding(padding),
                     )
                 }
             }
@@ -328,8 +328,8 @@ fun NavContent(
         // ────────────────────────────────────────────────────
         // ADMIN
         // ────────────────────────────────────────────────────
-        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
-        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, modifier) }
-        composable(Screen.UnidadesAdmin.route) { UnidadesScreen(modifier = modifier) }
+        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
+        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController) }
+        composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
     }
 }
