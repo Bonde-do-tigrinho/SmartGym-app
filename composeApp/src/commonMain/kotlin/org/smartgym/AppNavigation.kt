@@ -320,10 +320,10 @@ fun NavContent(
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 
-        // ────────────────────────────────────────────────────
-        // ADMIN
-        // ────────────────────────────────────────────────────
-        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
-        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController) }
+        // composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
+
+        // Admin
+        composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
+        composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier)}
     }
 }
