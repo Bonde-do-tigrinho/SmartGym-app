@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.jetbrains.compose.resources.Font
+import org.smartgym.theme.SmartGymGreen
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
 import smartgym.composeapp.generated.resources.inter_regular
@@ -62,7 +63,7 @@ fun HomeProfessorScreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Color(0xFFEEEEEE))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             )
 
             Column(
@@ -176,7 +177,7 @@ fun HomeProfessorScreen(navController: NavController) {
 
                 BotaoAcaoRapida(
                     texto = "+ Nova Ficha de Treino",
-                    backgroundColor = Color(0xFFCDDC39),
+                    backgroundColor = SmartGymGreen,
                     textColor = Color.Black,
                     onClick = {}
                 )
@@ -278,7 +279,7 @@ fun AtividadeItem(
         Box(
             modifier = Modifier
                 .size(8.dp)
-                .background(Color(0xFFCDDC39), shape = RoundedCornerShape(50))
+                .background(SmartGymGreen, shape = RoundedCornerShape(50))
         )
 
         Column(

@@ -15,11 +15,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -49,57 +50,71 @@ private val InterFont @Composable get() = FontFamily(
     Font(Res.font.inter_bold, FontWeight.Bold)
 )
 
-data class Ficha(
-    val id: String,
+data class Avaliacao(
+    val id: Int,
     val nomeAluno: String,
-    val nomeTreino: String,
-    val dataCriacao: String,
-    val dataValidade: String,
-    val numExercicios: Int
+    val dataAvaliacao: String,
+    val peso: String,
+    val percentualGordura: String,
+    val imc: String,
+    val nota: String
 )
 
 @Composable
-fun FichasScreen(navController: NavController) {
-    val searchText = remember { mutableStateOf("") }
+fun AvaliacoesScreen(navController: NavController) {
+    val searchQuery = remember { mutableStateOf("") }
     val showMenu = remember { mutableStateOf(false) }
 
-    val fichas = listOf(
-        Ficha(
-            id = "1",
+    val avaliacoes = listOf(
+        Avaliacao(
+            id = 1,
             nomeAluno = "Lucas Mendes",
-            nomeTreino = "Treino A - Peito e Tríceps",
-            dataCriacao = "15/03/2026",
-            dataValidade = "15/06/2026",
-            numExercicios = 3
+            dataAvaliacao = "15/03/2026",
+            peso = "78.5 kg",
+            percentualGordura = "15.2%",
+            imc = "25.6",
+            nota = "Boa evolução. Manter treino atual."
         ),
-        Ficha(
-            id = "2",
+        Avaliacao(
+            id = 2,
             nomeAluno = "Fernanda Lima",
-            nomeTreino = "Treino B - Costas e Bíceps",
-            dataCriacao = "14/03/2026",
-            dataValidade = "14/06/2026",
-            numExercicios = 2
+            dataAvaliacao = "14/03/2026",
+            peso = "62 kg",
+            percentualGordura = "22.5%",
+            imc = "22.8",
+            nota = "Iniciar treino de força."
         ),
-        Ficha(
-            id = "3",
+        Avaliacao(
+            id = 3,
             nomeAluno = "João Silva",
-            nomeTreino = "Treino C - Pernas",
-            dataCriacao = "10/03/2026",
-            dataValidade = "10/06/2026",
-            numExercicios = 4
+            dataAvaliacao = "10/03/2026",
+            peso = "85 kg",
+            percentualGordura = "18.5%",
+            imc = "28.1",
+            nota = "Reduzir percentual de gordura."
         ),
-        Ficha(
-            id = "4",
+        Avaliacao(
+            id = 4,
             nomeAluno = "Maria Santos",
-            nomeTreino = "Treino D - Full Body",
-            dataCriacao = "09/03/2026",
-            dataValidade = "09/06/2026",
-            numExercicios = 5
+            dataAvaliacao = "09/03/2026",
+            peso = "55 kg",
+            percentualGordura = "20.1%",
+            imc = "21.3",
+            nota = "Ótimo progresso no programa."
+        ),
+        Avaliacao(
+            id = 5,
+            nomeAluno = "Pedro Costa",
+            dataAvaliacao = "08/03/2026",
+            peso = "92 kg",
+            percentualGordura = "26.3%",
+            imc = "30.2",
+            nota = "Aumentar intensidade do treino."
         )
     )
 
-    val fichasFiltradas = fichas.filter {
-        it.nomeAluno.contains(searchText.value, ignoreCase = true)
+    val avaliacoesFiltradas = avaliacoes.filter {
+        it.nomeAluno.contains(searchQuery.value, ignoreCase = true)
     }
 
     Box(
@@ -127,7 +142,7 @@ fun FichasScreen(navController: NavController) {
                     .padding(16.dp)
             ) {
                 Text(
-                    "Fichas de Treino",
+                    "Avaliações Físicas",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -135,7 +150,7 @@ fun FichasScreen(navController: NavController) {
                 )
 
                 Text(
-                    "Gerencie as fichas dos alunos",
+                    "evolução dos alunos",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = InterFont
@@ -154,7 +169,7 @@ fun FichasScreen(navController: NavController) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "+ Nova Ficha",
+                        "+ Nova Avaliação",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black,
@@ -165,36 +180,37 @@ fun FichasScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TextField(
-                    value = searchText.value,
-                    onValueChange = { searchText.value = it },
+                    value = searchQuery.value,
+                    onValueChange = { searchQuery.value = it },
                     placeholder = {
                         Text(
-                            "Buscar fichas...",
-                            fontSize = 13.sp,
+                            "Buscar avaliações...",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = InterFont
+                            fontFamily = InterFont,
+                            fontSize = 13.sp
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Buscar",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
                         )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(70.dp)
                         .padding(vertical = 5.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
                         focusedTextColor = MaterialTheme.colorScheme.onBackground,
                         unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                     ),
-                    shape = RoundedCornerShape(8.dp),
                     singleLine = true,
                     textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
                         fontSize = 13.sp,
@@ -204,15 +220,15 @@ fun FichasScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ✅ LAZYCOLUMN - Lista de fichas
+                // ✅ LAZYCOLUMN - Lista os cards de avaliações
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(fichasFiltradas.size) { index ->
-                        FichaItem(ficha = fichasFiltradas[index])
+                    items(avaliacoesFiltradas.size) { index ->
+                        AvaliacaoCard(avaliacao = avaliacoesFiltradas[index])
                     }
                     item {
                         Spacer(modifier = Modifier.height(40.dp))
@@ -230,7 +246,7 @@ fun FichasScreen(navController: NavController) {
 }
 
 @Composable
-fun FichaItem(ficha: Ficha) {
+fun AvaliacaoCard(avaliacao: Avaliacao) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -248,63 +264,45 @@ fun FichaItem(ficha: Ficha) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Nome do Aluno - Destaque
-            Text(
-                ficha.nomeAluno,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontFamily = InterFont
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Nome do Treino - Badge
-            Box(
+            // Nome do Aluno - Destaque Principal
+            Row(
                 modifier = Modifier
-                    .background(
-                        color = SmartGymGreen,
-                        shape = RoundedCornerShape(6.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        avaliacao.nomeAluno,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontFamily = InterFont
                     )
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    ficha.nomeTreino,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black,
-                    fontFamily = InterFont
-                )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-            // Separador
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
+                    Text(
+                        avaliacao.dataAvaliacao,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = InterFont
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Informações
-            Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                InfoRow(
-                    label = "Criado em:",
-                    value = ficha.dataCriacao
-                )
-                InfoRow(
-                    label = "Válido até:",
-                    value = ficha.dataValidade
-                )
-                InfoRow(
-                    label = "Exercícios:",
-                    value = ficha.numExercicios.toString()
-                )
+                IconButton(
+                    onClick = {},
+                    modifier = Modifier
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Visibility,
+                        contentDescription = "Visualizar",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -319,67 +317,77 @@ fun FichaItem(ficha: Ficha) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Botões
+            // Métricas - Destacadas
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
-                    onClick = {},
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "👁 Visualizar",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontFamily = InterFont
-                    )
-                }
+                MetricaAvaliacao(
+                    label = "Peso",
+                    valor = avaliacao.peso,
+                    modifier = Modifier.weight(1f)
+                )
 
-                OutlinedButton(
-                    onClick = {},
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "✏ Editar",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontFamily = InterFont
-                    )
-                }
+                MetricaAvaliacao(
+                    label = "% Gordura",
+                    valor = avaliacao.percentualGordura,
+                    modifier = Modifier.weight(1f)
+                )
+
+                MetricaAvaliacao(
+                    label = "IMC",
+                    valor = avaliacao.imc,
+                    modifier = Modifier.weight(1f)
+                )
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Separador
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Nota do Professor
+            Text(
+                "\"${avaliacao.nota}\"",
+                fontSize = 12.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = InterFont
+            )
         }
     }
 }
 
 @Composable
-fun InfoRow(
+fun MetricaAvaliacao(
     label: String,
-    value: String
+    valor: String,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+    Column(
+        modifier = modifier
     ) {
         Text(
             label,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontFamily = InterFont
         )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
         Text(
-            value,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
+            valor,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onBackground,
             fontFamily = InterFont
         )
