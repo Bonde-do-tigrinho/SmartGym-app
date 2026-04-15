@@ -3,6 +3,7 @@ package org.smartgym.Screens.Auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -13,11 +14,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -28,17 +31,62 @@ import org.smartgym.auth.MockAuth
 
 @Composable
 fun LoginScreen(
-    navController: NavController? = null,  // ← Mantém compatibilidade
-    onLoginSuccess: ((UserRole) -> Unit)? = null  // ← Novo callback
+    navController: NavController? = null,
+    onLoginSuccess: ((UserRole) -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current // Controla o teclado
 
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
     var carregando by remember { mutableStateOf(false) }
+
+    // --- LÓGICA DE LOGIN CENTRALIZADA ---
+    val performLogin = {
+        val erro = MockAuth.validarLogin(email, senha)
+        if (erro != null) {
+            scope.launch { snackbarHostState.showSnackbar(erro) }
+        } else {
+            carregando = true
+            scope.launch {
+                try {
+                    val resultado = MockAuth.login(email, senha)
+                    carregando = false
+
+                    if (resultado.sucesso && resultado.papel != null) {
+                        scope.launch { snackbarHostState.showSnackbar("✅ Login efetuado com sucesso!") }
+                        val userRole = when (resultado.papel) {
+                            "aluno" -> UserRole.ALUNO
+                            "professor" -> UserRole.PROFESSOR
+                            "admin" -> UserRole.ADMIN
+                            else -> return@launch
+                        }
+
+                        if (onLoginSuccess != null) {
+                            onLoginSuccess(userRole)
+                        } else if (navController != null) {
+                            val destino = when (resultado.papel) {
+                                "admin" -> Screen.HomeAdmin.route
+                                "professor" -> Screen.HomeProfessor.route
+                                else -> Screen.HomeAluno.route
+                            }
+                            navController.navigate(destino) {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        }
+                    } else {
+                        scope.launch { snackbarHostState.showSnackbar("❌ ${resultado.mensagem}") }
+                    }
+                } catch (e: Exception) {
+                    carregando = false
+                    scope.launch { snackbarHostState.showSnackbar("❌ Erro: ${e.message}") }
+                }
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -69,18 +117,8 @@ fun LoginScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            Text(
-                "FITGYM.",
-                color = colors.onBackground,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 2.sp
-            )
-            Text(
-                "Sistema de Gestão de Academia",
-                color = colors.onSurfaceVariant,
-                fontSize = 14.sp
-            )
+            Text("FITGYM.", color = colors.onBackground, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+            Text("Sistema de Gestão de Academia", color = colors.onSurfaceVariant, fontSize = 14.sp)
 
             Spacer(Modifier.height(48.dp))
 
@@ -93,15 +131,12 @@ fun LoginScreen(
                     placeholder = { Text("seu@email.com", color = colors.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colors.primary,
-                        unfocusedBorderColor = colors.surfaceVariant,
-                        focusedContainerColor = colors.surface,
-                        unfocusedContainerColor = colors.surface,
-                        focusedTextColor = colors.onSurface,
-                        unfocusedTextColor = colors.onSurface
+                        focusedBorderColor = colors.primary, unfocusedBorderColor = colors.surfaceVariant,
+                        focusedContainerColor = colors.surface, unfocusedContainerColor = colors.surface,
+                        focusedTextColor = colors.onSurface, unfocusedTextColor = colors.onSurface
                     )
                 )
             }
@@ -115,27 +150,34 @@ fun LoginScreen(
                     value = senha,
                     onValueChange = { senha = it },
                     placeholder = { Text("••••••••", color = colors.onSurfaceVariant) },
-                    modifier = Modifier.fillMaxWidth(),
+
+                    // --- MÁGICA DO TECLADO AQUI ---
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        focusManager.clearFocus()
+                        performLogin() // Chama o login
+                    }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onKeyEvent { event ->
+                            if (event.key == Key.Enter && event.type == KeyEventType.KeyUp) {
+                                focusManager.clearFocus()
+                                performLogin() // Chama o login no PC
+                                true
+                            } else false
+                        },
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     visualTransformation = if (senhaVisivel) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     trailingIcon = {
                         IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
-                            Icon(
-                                if (senhaVisivel) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = null,
-                                tint = colors.onSurfaceVariant
-                            )
+                            Icon(if (senhaVisivel) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null, tint = colors.onSurfaceVariant)
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colors.primary,
-                        unfocusedBorderColor = colors.surfaceVariant,
-                        focusedContainerColor = colors.surface,
-                        unfocusedContainerColor = colors.surface,
-                        focusedTextColor = colors.onSurface,
-                        unfocusedTextColor = colors.onSurface
+                        focusedBorderColor = colors.primary, unfocusedBorderColor = colors.surfaceVariant,
+                        focusedContainerColor = colors.surface, unfocusedContainerColor = colors.surface,
+                        focusedTextColor = colors.onSurface, unfocusedTextColor = colors.onSurface
                     )
                 )
             }
@@ -143,7 +185,7 @@ fun LoginScreen(
             Spacer(Modifier.height(8.dp))
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                TextButton(onClick = { /* TODO: navController.navigate("esqueceu_senha") */ }) {
+                TextButton(onClick = { /* TODO */ }) {
                     Text("Esqueceu sua senha?", color = colors.onSurfaceVariant, fontSize = 13.sp)
                 }
             }
@@ -151,77 +193,14 @@ fun LoginScreen(
             Spacer(Modifier.height(24.dp))
 
             Button(
-                onClick = {
-                    val erro = MockAuth.validarLogin(email, senha)
-                    if (erro != null) {
-                        scope.launch { snackbarHostState.showSnackbar(erro) }
-                    } else {
-                        carregando = true
-                        scope.launch {
-                            try {
-                                // ✅ NOVO: MockAuth.login() agora retorna papel
-                                val resultado = MockAuth.login(email, senha)
-                                carregando = false
-
-                                if (resultado.sucesso && resultado.papel != null) {
-                                    // ✅ Login com sucesso!
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("✅ Login efetuado com sucesso!")
-                                    }
-
-                                    // ✅ NOVO: Converter papel para UserRole
-                                    val userRole = when (resultado.papel) {
-                                        "aluno" -> UserRole.ALUNO
-                                        "professor" -> UserRole.PROFESSOR
-                                        "admin" -> UserRole.ADMIN
-                                        else -> return@launch
-                                    }
-
-                                    // ✅ NOVO: Se houver callback (novo padrão), use-o
-                                    if (onLoginSuccess != null) {
-                                        onLoginSuccess(userRole)
-                                    } else if (navController != null) {
-                                        // ✅ FALLBACK: Se houver navController (padrão antigo), navege
-                                        val destino = when (resultado.papel) {
-                                            "admin" -> Screen.HomeAdmin.route
-                                            "professor" -> Screen.HomeProfessor.route
-                                            else -> Screen.HomeAluno.route
-                                        }
-                                        navController.navigate(destino) {
-                                            popUpTo("login") { inclusive = true }
-                                        }
-                                    }
-                                } else {
-                                    // ❌ Erro no login
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("❌ ${resultado.mensagem}")
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                carregando = false
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("❌ Erro: ${e.message}")
-                                }
-                            }
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                onClick = { performLogin() }, // Chama o login no botão
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colors.primary,
-                    contentColor = colors.onPrimary
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
                 enabled = !carregando
             ) {
                 if (carregando) {
-                    CircularProgressIndicator(
-                        color = colors.onPrimary,
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(color = colors.onPrimary, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                 } else {
                     Text("Entrar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
@@ -229,15 +208,9 @@ fun LoginScreen(
 
             Spacer(Modifier.weight(1f))
 
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Text("Não tem uma conta? ", color = colors.onSurfaceVariant, fontSize = 14.sp)
-                TextButton(
-                    onClick = { navController?.navigate("cadastro") },
-                    contentPadding = PaddingValues(0.dp)
-                ) {
+                TextButton(onClick = { navController?.navigate("cadastro") }, contentPadding = PaddingValues(0.dp)) {
                     Text("Crie agora!", color = colors.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
