@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.rounded.Assignment
@@ -32,6 +33,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
 import org.smartgym.Screens.Adm.HomeAdminScreen
+import org.smartgym.Screens.Adm.UnidadesScreen
 import org.smartgym.Screens.Aluno.AparelhosScreen
 import org.smartgym.Screens.Aluno.HomeScreen
 import org.smartgym.Screens.Aluno.PagamentosScreen
@@ -44,7 +46,6 @@ import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.theme.TextGray
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation(userRole: UserRole) {
@@ -52,7 +53,6 @@ fun AppNavigation(userRole: UserRole) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Rotas que mostram bottom nav (apenas aluno)
     val rotasComBottomNav = listOf(
         Screen.HomeAluno.route,
         Screen.Aparelhos.route,
@@ -136,7 +136,6 @@ fun AppNavigation(userRole: UserRole) {
             }
         }
 
-
         UserRole.PROFESSOR -> {
             NavContent(
                 navController = navController,
@@ -154,17 +153,20 @@ fun AppNavigation(userRole: UserRole) {
 
             val adminItems = listOf(
                 Screen.HomeAdmin,
-                Screen.AlunosAdmin
+                Screen.AlunosAdmin,
+                Screen.UnidadesAdmin
             )
 
             val adminLabels = mapOf(
                 Screen.HomeAdmin.route to "Dashboard",
                 Screen.AlunosAdmin.route to "Alunos",
+                Screen.UnidadesAdmin.route to "Unidades",
             )
 
             val adminIcons = mapOf(
                 Screen.HomeAdmin.route to Icons.Outlined.Home,
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
+                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
             )
 
             ModalNavigationDrawer(
@@ -320,10 +322,11 @@ fun NavContent(
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 
-        // composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
-
-        // Admin
+        // ────────────────────────────────────────────────────
+        // ADMIN
+        // ────────────────────────────────────────────────────
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController, modifier) }
-        composable (Screen.AlunosAdmin.route ) { AlunosAdminScreen(navController, modifier)}
+        composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, modifier) }
+        composable(Screen.UnidadesAdmin.route) { UnidadesScreen(modifier = modifier) }
     }
 }
