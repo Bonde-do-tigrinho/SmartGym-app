@@ -289,11 +289,11 @@ fun NavContent(
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
         composable(
-            route = Screen.EditarAluno.route + "/{alunoId}",
-            arguments = listOf(navArgument("alunoId") { type = NavType.IntType })
+            route = Screen.EditarAluno.route + "/{alunoId}"
         ) { backStackEntry ->
-            val alunoId = backStackEntry.arguments?.getInt("alunoId") ?: return@composable
-            EditarAlunoScreen(navController, alunoId, viewModel = alunosViewModel)
+            val alunoId = backStackEntry.arguments?.get("alunoId").toString().toInt()
+            EditarAlunoScreen(alunoId = alunoId, navController = navController)
         }
     }
 }
+

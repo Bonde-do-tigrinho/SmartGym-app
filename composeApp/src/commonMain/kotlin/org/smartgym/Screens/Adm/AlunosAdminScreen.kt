@@ -40,6 +40,8 @@ import org.smartgym.viewModel.Adm.AlunosViewModel
 fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifier, viewModel: AlunosViewModel = viewModel()) {
     val alunos by viewModel.alunosFiltrados.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     val horizontalScrollState = rememberScrollState()
 
@@ -89,6 +91,19 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (isLoading) {
+            CircularProgressIndicator()
+        }
+
+        errorMessage?.let {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = it,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),

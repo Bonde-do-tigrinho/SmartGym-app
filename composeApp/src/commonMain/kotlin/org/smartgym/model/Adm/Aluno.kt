@@ -1,5 +1,8 @@
 package org.smartgym.model.Adm
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Aluno(
     val id: Int,
     val nome: String,
