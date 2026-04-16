@@ -107,7 +107,7 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
                     Column(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
                         Row(
                             modifier = Modifier
-                                .weight(1f)
+                                .width(800.dp)
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
@@ -174,10 +174,8 @@ fun AlunoRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Nome
         Text(aluno.nome, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(150.dp))
 
-        // Contato
         Column(modifier = Modifier.width(180.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Email, null, modifier = Modifier.size(12.dp))
@@ -191,10 +189,8 @@ fun AlunoRow(
             }
         }
 
-        // CPF
         Text(aluno.cpf, fontSize = 12.sp, modifier = Modifier.width(120.dp))
 
-        // Plano
         Box(
             modifier = Modifier
                 .width(80.dp)
@@ -206,7 +202,6 @@ fun AlunoRow(
             Text(aluno.plano, fontSize = 11.sp, color = Color(0xFFD9FF00), fontWeight = FontWeight.ExtraBold)
         }
 
-        // Status
         val statusTexto = if (aluno.status) "Ativo" else "Inativo"
         val statusCor = if (aluno.status) Color.Green else Color.Red
         Box(
@@ -220,7 +215,6 @@ fun AlunoRow(
             Text(statusTexto, fontSize = 11.sp, color = statusCor, fontWeight = FontWeight.ExtraBold)
         }
 
-        // Botões de ação
         Row(modifier = Modifier.width(90.dp)) {
             IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
                 Icon(
