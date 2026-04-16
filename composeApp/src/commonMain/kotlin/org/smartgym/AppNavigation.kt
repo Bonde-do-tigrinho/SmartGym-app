@@ -54,6 +54,12 @@ import org.smartgym.viewModel.aluno.AparelhosViewModel
 import org.smartgym.viewModel.aluno.TreinoViewModel
 import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
+import org.smartgym.viewModel.Professor.ExerciciosViewModel
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType.Application.Json
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,6 +261,25 @@ fun NavContent(
     val treinoViewModel = remember { TreinoViewModel() }
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
+
+    val httpClient = remember {
+        HttpClient {
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    prettyPrint = true
+                    isLenient = true
+                })
+            }
+        }
+    }
+
+    val exercicioRepository = remember { org.smartgym.repository.ApiExercicioRepository(httpClient) }
+
+    val exerciciosViewModel = remember { ExerciciosViewModel(exercicioRepository) }
+
+    // ----------------------------------------------------------------
+
     NavHost(
         navController = navController,
         startDestination = when (userRole) {
@@ -277,7 +302,16 @@ fun NavContent(
         }
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
-        composable(Screen.Exercicios.route) { ExerciciosScreen(navController) }
+
+        // --- MUDANÇA AQUI: Passando o viewModel para a ExerciciosScreen ---
+        composable(Screen.Exercicios.route) {
+            ExerciciosScreen(
+                navController = navController,
+                viewModel = exerciciosViewModel
+            )
+        }
+        // ------------------------------------------------------------------
+
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 

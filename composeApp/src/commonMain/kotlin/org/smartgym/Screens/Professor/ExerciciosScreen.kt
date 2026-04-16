@@ -12,16 +12,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,20 +32,26 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.jetbrains.compose.resources.Font
+import org.smartgym.model.professor.Exercicio
+import org.smartgym.model.professor.TipoExercicio
 import org.smartgym.theme.SmartGymGreen
+import org.smartgym.viewModel.Professor.ExerciciosViewModel
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
 import smartgym.composeapp.generated.resources.inter_regular
@@ -54,62 +63,23 @@ private val InterFont @Composable get() = FontFamily(
     Font(Res.font.inter_bold, FontWeight.Bold)
 )
 
-data class Exercicio(
-    val id: Int,
-    val nome: String,
-    val grupoMuscular: String,
-    val corGrupo: Color,
-    val descricao: String,
-    val equipamento: String
-)
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExerciciosScreen(navController: NavController) {
+fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewModel) {
     val searchQuery = remember { mutableStateOf("") }
     val showMenu = remember { mutableStateOf(false) }
+    val showForm = remember { mutableStateOf(false) }
 
-    val exercicios = listOf(
-        Exercicio(
-            id = 1,
-            nome = "Supino Reto",
-            grupoMuscular = "Peito",
-            corGrupo = Color(0xFFEF4444),
-            descricao = "Exercício para desenvolvimento do peitoral maior",
-            equipamento = "Barra"
-        ),
-        Exercicio(
-            id = 2,
-            nome = "Agachamento Livre",
-            grupoMuscular = "Pernas",
-            corGrupo = Color(0xFFF97316),
-            descricao = "Exercício composto para pernas e glúteos",
-            equipamento = "Barra"
-        ),
-        Exercicio(
-            id = 3,
-            nome = "Puxada Frontal",
-            grupoMuscular = "Costas",
-            corGrupo = Color(0xFF3B82F6),
-            descricao = "Desenvolvimento do latíssimo do dorso",
-            equipamento = "Máquina"
-        ),
-        Exercicio(
-            id = 4,
-            nome = "Desenvolvimento Militar",
-            grupoMuscular = "Ombro",
-            corGrupo = Color(0xFFA855F7),
-            descricao = "Exercício para deltoides",
-            equipamento = "Barra"
-        ),
-        Exercicio(
-            id = 5,
-            nome = "Rosca Direta",
-            grupoMuscular = "Bíceps",
-            corGrupo = Color(0xFF10B981),
-            descricao = "Isolamento de Biceps braquial",
-            equipamento = "Barra/Halteres"
-        )
-    )
+    val exercicios by viewModel.exercicios.collectAsState()
+    val nome by viewModel.nome.collectAsState()
+    val descricao by viewModel.descricao.collectAsState()
+    val tipo by viewModel.tipo.collectAsState()
+    val maquinaId by viewModel.maquinaId.collectAsState()
+    val editingId by viewModel.editingId.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadAll()
+    }
 
     Box(
         modifier = Modifier
@@ -130,102 +100,133 @@ fun ExerciciosScreen(navController: NavController) {
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
 
-            Column(
+            // AQUI COMEÇA A MUDANÇA: Usamos apenas LazyColumn para gerenciar o scroll da tela inteira
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    "Exercícios",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontFamily = InterFont
-                )
+                // item 1: Agrupa todo o cabeçalho, botão de novo exercício, formulário e campo de busca
+                item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Exercícios",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontFamily = InterFont
+                        )
 
-                Text(
-                    "Catálogo de exercícios disponíveis",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = InterFont
-                )
+                        Text(
+                            "Catálogo de exercícios disponíveis",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = InterFont
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = SmartGymGreen
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "+ Novo Exercício",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black,
-                        fontFamily = InterFont
+                        Button(
+                            onClick = { showForm.value = !showForm.value },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SmartGymGreen
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                if (editingId != null) "Editar Exercício" else "+ Novo Exercício",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Black,
+                                fontFamily = InterFont
+                            )
+                        }
+
+                        if (showForm.value) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            ExercicioForm(
+                                nome = nome,
+                                onNomeChange = viewModel::updateNome,
+                                descricao = descricao,
+                                onDescricaoChange = viewModel::updateDescricao,
+                                tipo = tipo,
+                                onTipoChange = viewModel::updateTipo,
+                                maquinaId = maquinaId,
+                                onMaquinaIdChange = viewModel::updateMaquinaId,
+                                onSave = {
+                                    viewModel.save()
+                                    showForm.value = false
+                                },
+                                onCancel = {
+                                    viewModel.clearForm()
+                                    showForm.value = false
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TextField(
+                            value = searchQuery.value,
+                            onValueChange = {
+                                searchQuery.value = it
+                                if (it.isBlank()) viewModel.loadAll() else viewModel.loadByNome(it)
+                            },
+                            placeholder = {
+                                Text(
+                                    "Buscar exercícios...",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontFamily = InterFont,
+                                    fontSize = 13.sp
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Buscar",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(70.dp)
+                                .padding(vertical = 5.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+                            ),
+                            singleLine = true,
+                            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                                fontSize = 13.sp,
+                                fontFamily = InterFont
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+
+                // item 2: A lista de exercícios em si (gerada dinamicamente)
+                items(exercicios.size) { index ->
+                    ExercicioCard(
+                        exercicio = exercicios[index],
+                        onEdit = { viewModel.loadById(it.id!!) ; showForm.value = true },
+                        onDelete = { viewModel.delete(it.id!!) }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextField(
-                    value = searchQuery.value,
-                    onValueChange = { searchQuery.value = it },
-                    placeholder = {
-                        Text(
-                            "Buscar exercícios...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = InterFont,
-                            fontSize = 13.sp
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Buscar",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(70.dp)
-                        .padding(vertical = 5.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    singleLine = true,
-                    textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                        fontSize = 13.sp,
-                        fontFamily = InterFont
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(exercicios.size) { index ->
-                        ExercicioCard(exercicio = exercicios[index])
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(40.dp))
-                    }
+                // item 3: Espaçador final
+                item {
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
@@ -238,8 +239,115 @@ fun ExerciciosScreen(navController: NavController) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExercicioCard(exercicio: Exercicio) {
+fun ExercicioForm(
+    nome: String,
+    onNomeChange: (String) -> Unit,
+    descricao: String,
+    onDescricaoChange: (String) -> Unit,
+    tipo: TipoExercicio,
+    onTipoChange: (TipoExercicio) -> Unit,
+    maquinaId: Long?,
+    onMaquinaIdChange: (Long?) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+            .padding(16.dp)
+    ) {
+        Text("Nome", fontFamily = InterFont, fontWeight = FontWeight.SemiBold)
+        TextField(
+            value = nome,
+            onValueChange = onNomeChange,
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text("Descrição", fontFamily = InterFont, fontWeight = FontWeight.SemiBold)
+        TextField(
+            value = descricao,
+            onValueChange = onDescricaoChange,
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            TextField(
+                value = tipo.name,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Tipo") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                TipoExercicio.values().forEach { tipoOption ->
+                    DropdownMenuItem(
+                        text = { Text(tipoOption.name) },
+                        onClick = {
+                            onTipoChange(tipoOption)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        if (tipo == TipoExercicio.MAQUINA) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("ID da Máquina", fontFamily = InterFont, fontWeight = FontWeight.SemiBold)
+            TextField(
+                value = maquinaId?.toString() ?: "",
+                onValueChange = { onMaquinaIdChange(it.toLongOrNull()) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row {
+            Button(onClick = onSave, modifier = Modifier.weight(1f)) {
+                Text("Salvar")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = onCancel, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)) {
+                Text("Cancelar")
+            }
+        }
+    }
+}
+
+@Composable
+fun ExercicioCard(exercicio: Exercicio, onEdit: (Exercicio) -> Unit, onDelete: (Exercicio) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -279,13 +387,13 @@ fun ExercicioCard(exercicio: Exercicio) {
                     Box(
                         modifier = Modifier
                             .background(
-                                color = exercicio.corGrupo,
+                                color = if (exercicio.tipo == TipoExercicio.LIVRE) Color.Green else Color.Blue,
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            exercicio.grupoMuscular,
+                            exercicio.tipo.name,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
@@ -299,7 +407,7 @@ fun ExercicioCard(exercicio: Exercicio) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = {},
+                        onClick = { onEdit(exercicio) },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
@@ -311,7 +419,7 @@ fun ExercicioCard(exercicio: Exercicio) {
                     }
 
                     IconButton(
-                        onClick = {},
+                        onClick = { onDelete(exercicio) },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
@@ -342,27 +450,29 @@ fun ExercicioCard(exercicio: Exercicio) {
                 fontFamily = InterFont
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            if (exercicio.tipo == TipoExercicio.MAQUINA && exercicio.maquinaId != null) {
+                Spacer(modifier = Modifier.height(10.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    "Equipamento:",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = InterFont
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        "Máquina ID:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = InterFont
+                    )
 
-                Text(
-                    exercicio.equipamento,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontFamily = InterFont
-                )
+                    Text(
+                        exercicio.maquinaId.toString(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontFamily = InterFont
+                    )
+                }
             }
         }
     }
