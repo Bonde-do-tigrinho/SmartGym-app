@@ -125,9 +125,6 @@ fun AvaliacoesScreen(navController: NavController) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            ProfessorHeader(
-                onMenuClick = { showMenu.value = !showMenu.value }
-            )
 
             Spacer(
                 modifier = Modifier
@@ -237,11 +234,6 @@ fun AvaliacoesScreen(navController: NavController) {
             }
         }
 
-        ProfessorMenuOverlay(
-            showMenu = showMenu.value,
-            onDismiss = { showMenu.value = false },
-            navController = navController
-        )
     }
 }
 
