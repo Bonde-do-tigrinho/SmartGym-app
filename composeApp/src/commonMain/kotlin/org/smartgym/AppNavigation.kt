@@ -1,5 +1,6 @@
 package org.smartgym
 
+import MaquinaViewModel
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
@@ -64,6 +66,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.smartgym.Screens.Adm.MaquinasAdminScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -191,7 +194,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             val adminItems = listOf(
                 Screen.HomeAdmin,
                 Screen.AlunosAdmin,
-                Screen.UnidadesAdmin
                 Screen.UnidadesAdmin,
                 Screen.MaquinasAdmin
             )
@@ -346,7 +348,6 @@ fun NavContent(
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
 
-        // --- MUDANÇA AQUI: Passando o viewModel para a ExerciciosScreen ---
         composable(Screen.Exercicios.route) {
             ExerciciosScreen(
                 navController = navController,
@@ -359,7 +360,6 @@ fun NavContent(
                 viewModel = exerciciosViewModel
             )
         }
-        // ------------------------------------------------------------------
 
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
