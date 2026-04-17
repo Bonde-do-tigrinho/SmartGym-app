@@ -34,6 +34,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -44,7 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.navigation.NavController
 import org.jetbrains.compose.resources.Font
 import org.smartgym.Screen
 import org.smartgym.model.professor.Avaliacao
@@ -67,9 +69,13 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
     val showMenu = remember { mutableStateOf(false) }
     val avaliacoes by viewModel.avaliacoes.collectAsState()
     var avaliacaoToDelete by remember { mutableStateOf<Avaliacao?>(null) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadAll()
+    // Carrega na entrada inicial e ao voltar desta tela (ex: após criar/editar)
+    LaunchedEffect(navBackStackEntry) {
+        if (navBackStackEntry?.destination?.route == Screen.Avaliacoes.route) {
+            viewModel.loadAll()
+        }
     }
 
     Box(
@@ -174,12 +180,12 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                items(avaliacoes.size) { index ->
+                items(avaliacoes, key = { it.id }) { avaliacao ->
                     AvaliacaoCard(
-                        avaliacao = avaliacoes[index],
+                        avaliacao = avaliacao,
                         onEdit = {
-                            it.id?.let { id ->
-                                viewModel.loadById(id)
+                            if (it.id != 0) {
+                                viewModel.loadById(it.id)
                                 navController.navigate(Screen.NovaAvaliacao.route)
                             }
                         },
@@ -195,7 +201,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
             DeleteAvaliacaoDialog(
                 alunoNome = avaliacaoToDelete!!.nomeAluno,
                 onConfirm = {
-                    avaliacaoToDelete!!.id?.let { viewModel.delete(it) }
+                    viewModel.delete(avaliacaoToDelete!!.id)
                     avaliacaoToDelete = null
                 },
                 onDismiss = { avaliacaoToDelete = null }
@@ -287,9 +293,9 @@ fun AvaliacaoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                MetricaAvaliacao(label = "Peso", valor = avaliacao.peso, modifier = Modifier.weight(1f))
-                MetricaAvaliacao(label = "% Gordura", valor = avaliacao.percentualGordura, modifier = Modifier.weight(1f))
-                MetricaAvaliacao(label = "IMC", valor = avaliacao.imc, modifier = Modifier.weight(1f))
+                MetricaAvaliacao(label = "Peso", valor = "${avaliacao.peso} kg", modifier = Modifier.weight(1f))
+                MetricaAvaliacao(label = "% Gordura", valor = "${avaliacao.percentualGordura}%", modifier = Modifier.weight(1f))
+                MetricaAvaliacao(label = "IMC", valor = avaliacao.imc.toString(), modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(14.dp))

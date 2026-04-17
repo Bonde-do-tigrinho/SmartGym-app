@@ -14,8 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.MonitorWeight
@@ -23,15 +23,24 @@ import androidx.compose.material.icons.outlined.Percent
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -39,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.Font
 import org.smartgym.theme.SmartGymGreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
@@ -53,17 +63,29 @@ private val InterFont @Composable get() = FontFamily(
     Font(Res.font.inter_bold, FontWeight.Bold)
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesViewModel) {
     val nomeAluno by viewModel.nomeAluno.collectAsState()
+    val alunosResumo by viewModel.alunosResumo.collectAsState()
+    val selectedAlunoId by viewModel.selectedAlunoId.collectAsState()
     val dataAvaliacao by viewModel.dataAvaliacao.collectAsState()
     val peso by viewModel.peso.collectAsState()
     val percentualGordura by viewModel.percentualGordura.collectAsState()
     val imc by viewModel.imc.collectAsState()
     val nota by viewModel.nota.collectAsState()
     val editingId by viewModel.editingId.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    var alunoDropdownExpanded by remember { mutableStateOf(false) }
 
     val isEditing = editingId != null
+
+    LaunchedEffect(Unit) {
+        viewModel.loadAlunosResumo()
+        viewModel.navigationEvent.collectLatest {
+            navController.popBackStack()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -81,7 +103,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 modifier = Modifier.padding(start = 0.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Voltar",
                     tint = Color(0xFF111827)
                 )
@@ -110,18 +132,40 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                FormLabelAvaliacao("Nome do aluno")
-                TextField(
-                    value = nomeAluno,
-                    onValueChange = viewModel::updateNomeAluno,
-                    placeholder = { Text("Ex: Lucas Mendes", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = Color(0xFF9CA3AF)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = fieldColorsAvaliacao(),
-                    textStyle = LocalTextStyle.current.copy(fontFamily = InterFont)
-                )
+                FormLabelAvaliacao("Aluno")
+                ExposedDropdownMenuBox(
+                    expanded = alunoDropdownExpanded,
+                    onExpandedChange = { alunoDropdownExpanded = !alunoDropdownExpanded }
+                ) {
+                    TextField(
+                        value = if (selectedAlunoId != null && nomeAluno.isNotBlank()) "$nomeAluno (ID: $selectedAlunoId)" else "",
+                        onValueChange = {},
+                        readOnly = true,
+                        placeholder = { Text("Selecione o aluno", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
+                        leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alunoDropdownExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = fieldColorsAvaliacao(),
+                        textStyle = LocalTextStyle.current.copy(fontFamily = InterFont)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = alunoDropdownExpanded,
+                        onDismissRequest = { alunoDropdownExpanded = false }
+                    ) {
+                        alunosResumo.forEach { aluno ->
+                            DropdownMenuItem(
+                                text = { Text("${aluno.nome} (ID: ${aluno.id})", fontFamily = InterFont) },
+                                onClick = {
+                                    viewModel.updateSelectedAlunoId(aluno.id)
+                                    alunoDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 FormLabelAvaliacao("Data da avaliacao")
                 TextField(
@@ -180,7 +224,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                     value = nota,
                     onValueChange = viewModel::updateNota,
                     placeholder = { Text("Observacoes do professor", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.Assignment, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Assignment, contentDescription = null, tint = Color(0xFF9CA3AF)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
@@ -195,21 +239,25 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
             Button(
                 onClick = {
                     viewModel.save()
-                    navController.popBackStack()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SmartGymGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = SmartGymGreen),
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "Salvar",
-                    color = Color.Black,
-                    fontFamily = InterFont,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.Black)
+                } else {
+                    Text(
+                        text = "Salvar",
+                        color = Color.Black,
+                        fontFamily = InterFont,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -1,68 +1,59 @@
 package org.smartgym.repository
 
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import org.smartgym.model.professor.Avaliacao
+import org.smartgym.network.ApiClient
 
-class ApiAvaliacaoRepository(private val client: HttpClient) : AvaliacaoRepository {
+class ApiAvaliacaoRepository : AvaliacaoRepository {
 
-    private val timeoutPorHostMs = 5000L
+    private val client = ApiClient.client
+    private val basePaths = listOf("/api/avaliacoes", "/api/avaliacao", "/avaliacoes", "/avaliacao")
 
-    private val baseUrls = listOf(
-        // Android fisico + USB debugging (com `adb reverse tcp:8080 tcp:8080`)
-        "http://localhost:8080/api/avaliacoes",
-        "http://127.0.0.1:8080/api/avaliacoes",
-        // Android emulator
-        "http://10.0.2.2:8080/api/avaliacoes"
-    )
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    private suspend fun <T> executeWithBaseUrl(request: suspend (String) -> T): T {
+    private fun url(basePath: String, path: String = "") = ApiClient.getUrl("$basePath$path")
+
+    private suspend fun <T> execute(request: suspend (String) -> T): T {
         var lastError: Exception? = null
-        val falhas = mutableListOf<String>()
 
-        for (baseUrl in baseUrls) {
+        for (basePath in basePaths) {
             try {
-                return withTimeout(timeoutPorHostMs) {
-                    request(baseUrl)
-                }
+                return request(basePath)
             } catch (e: ResponseException) {
-                // Erro HTTP indica que conectou no backend; nao devemos mascarar como erro de conexao.
                 val body = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
-                val detalheBody = if (body.isNotBlank()) " | body=$body" else ""
-                throw IllegalStateException(
-                    "Erro HTTP ${e.response.status.value} ao acessar $baseUrl$detalheBody",
-                    e
-                )
-            } catch (e: TimeoutCancellationException) {
-                falhas.add("$baseUrl => timeout apos ${timeoutPorHostMs}ms")
-                lastError = IllegalStateException("timeout ao acessar $baseUrl", e)
-            } catch (e: Exception) {
-                falhas.add("$baseUrl => ${e.message ?: e::class.simpleName}")
+                if (e.response.status.value != 404 || basePath == basePaths.last()) {
+                    val detalheBody = if (body.isNotBlank()) " | body=$body" else ""
+                    throw IllegalStateException(
+                        "Erro HTTP ${e.response.status.value} ao acessar ${url(basePath)}$detalheBody",
+                        e
+                    )
+                }
                 lastError = e
+            } catch (e: Exception) {
+                lastError = e
+                if (basePath == basePaths.last()) {
+                    throw IllegalStateException(
+                        "Nao foi possivel concluir a operacao de avaliacoes em ${url(basePath)}: ${e.message}",
+                        e
+                    )
+                }
             }
         }
 
-        val tentativas = baseUrls.joinToString()
-        val detalhesFalhas = if (falhas.isNotEmpty()) " | falhas: ${falhas.joinToString("; ")}" else ""
-        val causa = lastError?.message?.let { " | causa final: $it" } ?: ""
-        val dica =
-            "Nao foi possivel conectar ao backend de avaliacoes. Hosts tentados: [$tentativas]. " +
-            "Se estiver em telefone fisico via USB, execute: adb reverse tcp:8080 tcp:8080 " +
-            "e confirme que o backend esta ativo em localhost:8080.$detalhesFalhas$causa"
-
-        throw IllegalStateException(dica, lastError)
+        throw IllegalStateException(
+            "Nao foi possivel concluir a operacao de avaliacoes.",
+            lastError
+        )
     }
 
     private fun normalizarData(data: String): String {
@@ -78,40 +69,45 @@ class ApiAvaliacaoRepository(private val client: HttpClient) : AvaliacaoReposito
     }
 
     override suspend fun getAll(): List<Avaliacao> {
-        return executeWithBaseUrl { baseUrl ->
-            client.get(baseUrl).body()
+        return execute { basePath ->
+            val response = client.get(url(basePath))
+            val jsonBody = response.bodyAsText()
+            println("DEBUG - GET $basePath Response: $jsonBody")
+            val avaliacoes = json.decodeFromString<List<Avaliacao>>(jsonBody)
+            println("DEBUG - Deserialized avaliacoes: $avaliacoes")
+            avaliacoes
         }
     }
 
-    override suspend fun getById(id: Long): Avaliacao? {
-        return executeWithBaseUrl { baseUrl ->
-            client.get("$baseUrl/$id").body()
+    override suspend fun getById(id: Int): Avaliacao? {
+        return execute { basePath ->
+            client.get(url(basePath, "/$id")).body()
         }
     }
 
-    override suspend fun create(avaliacao: Avaliacao): Avaliacao {
+    override suspend fun create(avaliacao: Avaliacao) {
         val payload = avaliacao.copy(dataAvaliacao = normalizarData(avaliacao.dataAvaliacao))
-        return executeWithBaseUrl { baseUrl ->
-            client.post(baseUrl) {
+        execute { basePath ->
+            client.post(url(basePath)) {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
-            }.body()
+            }
         }
     }
 
-    override suspend fun update(id: Long, avaliacao: Avaliacao): Avaliacao {
+    override suspend fun update(id: Int, avaliacao: Avaliacao) {
         val payload = avaliacao.copy(dataAvaliacao = normalizarData(avaliacao.dataAvaliacao))
-        return executeWithBaseUrl { baseUrl ->
-            client.put("$baseUrl/$id") {
+        execute { basePath ->
+            client.put(url(basePath, "/$id")) {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
-            }.body()
+            }
         }
     }
 
-    override suspend fun delete(id: Long) {
-        executeWithBaseUrl { baseUrl ->
-            client.delete("$baseUrl/$id")
+    override suspend fun delete(id: Int) {
+        execute { basePath ->
+            client.delete(url(basePath, "/$id"))
         }
     }
 
@@ -119,31 +115,9 @@ class ApiAvaliacaoRepository(private val client: HttpClient) : AvaliacaoReposito
         val termo = nomeAluno.trim()
         if (termo.isBlank()) return getAll()
 
-        fun filtrarLocalmente(lista: List<Avaliacao>): List<Avaliacao> {
-            return lista.filter { it.nomeAluno.contains(termo, ignoreCase = true) }
-        }
-
-        return try {
-            val porNomeAluno: List<Avaliacao> = executeWithBaseUrl { baseUrl ->
-                client.get("$baseUrl/search") {
-                    parameter("nomeAluno", termo)
-                }.body()
-            }
-
-            if (porNomeAluno.isNotEmpty()) {
-                porNomeAluno
-            } else {
-                val porNome: List<Avaliacao> = executeWithBaseUrl { baseUrl ->
-                    client.get("$baseUrl/search") {
-                        parameter("nome", termo)
-                    }.body()
-                }
-
-                if (porNome.isNotEmpty()) porNome else filtrarLocalmente(getAll())
-            }
-        } catch (_: Exception) {
-            // Fallback para manter a busca funcional mesmo com contrato de endpoint diferente.
-            filtrarLocalmente(getAll())
+        return getAll().filter { avaliacao ->
+            avaliacao.nomeAluno.contains(termo, ignoreCase = true) ||
+                avaliacao.id.toString() == termo
         }
     }
 }
