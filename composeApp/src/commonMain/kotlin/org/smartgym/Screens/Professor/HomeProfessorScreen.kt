@@ -55,9 +55,6 @@ fun HomeProfessorScreen(navController: NavController) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            ProfessorHeader(
-                onMenuClick = { showMenu.value = !showMenu.value }
-            )
 
             Spacer(
                 modifier = Modifier
@@ -204,11 +201,6 @@ fun HomeProfessorScreen(navController: NavController) {
             }
         }
 
-        ProfessorMenuOverlay(
-            showMenu = showMenu.value,
-            onDismiss = { showMenu.value = false },
-            navController = navController
-        )
     }
 }
 
