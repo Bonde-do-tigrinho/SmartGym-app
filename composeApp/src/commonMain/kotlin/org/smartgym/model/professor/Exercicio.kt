@@ -11,6 +11,6 @@ data class Exercicio(
     val nome: String,
     val descricao: String,
     val tipo: TipoExercicio,
-    val grupoMuscular: String?,
+    val grupoMuscular: String? = null,
     val maquinaId: Long? = null
 )

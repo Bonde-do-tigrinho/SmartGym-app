@@ -6,39 +6,52 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import androidx.compose.ui.window.Dialog
 import org.jetbrains.compose.resources.Font
+import org.smartgym.Screen
+import org.smartgym.model.professor.Avaliacao
 import org.smartgym.theme.SmartGymGreen
+import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
 import smartgym.composeapp.generated.resources.inter_regular
@@ -50,71 +63,19 @@ private val InterFont @Composable get() = FontFamily(
     Font(Res.font.inter_bold, FontWeight.Bold)
 )
 
-data class Avaliacao(
-    val id: Int,
-    val nomeAluno: String,
-    val dataAvaliacao: String,
-    val peso: String,
-    val percentualGordura: String,
-    val imc: String,
-    val nota: String
-)
-
 @Composable
-fun AvaliacoesScreen(navController: NavController) {
+fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewModel) {
     val searchQuery = remember { mutableStateOf("") }
     val showMenu = remember { mutableStateOf(false) }
+    val avaliacoes by viewModel.avaliacoes.collectAsState()
+    var avaliacaoToDelete by remember { mutableStateOf<Avaliacao?>(null) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    val avaliacoes = listOf(
-        Avaliacao(
-            id = 1,
-            nomeAluno = "Lucas Mendes",
-            dataAvaliacao = "15/03/2026",
-            peso = "78.5 kg",
-            percentualGordura = "15.2%",
-            imc = "25.6",
-            nota = "Boa evolução. Manter treino atual."
-        ),
-        Avaliacao(
-            id = 2,
-            nomeAluno = "Fernanda Lima",
-            dataAvaliacao = "14/03/2026",
-            peso = "62 kg",
-            percentualGordura = "22.5%",
-            imc = "22.8",
-            nota = "Iniciar treino de força."
-        ),
-        Avaliacao(
-            id = 3,
-            nomeAluno = "João Silva",
-            dataAvaliacao = "10/03/2026",
-            peso = "85 kg",
-            percentualGordura = "18.5%",
-            imc = "28.1",
-            nota = "Reduzir percentual de gordura."
-        ),
-        Avaliacao(
-            id = 4,
-            nomeAluno = "Maria Santos",
-            dataAvaliacao = "09/03/2026",
-            peso = "55 kg",
-            percentualGordura = "20.1%",
-            imc = "21.3",
-            nota = "Ótimo progresso no programa."
-        ),
-        Avaliacao(
-            id = 5,
-            nomeAluno = "Pedro Costa",
-            dataAvaliacao = "08/03/2026",
-            peso = "92 kg",
-            percentualGordura = "26.3%",
-            imc = "30.2",
-            nota = "Aumentar intensidade do treino."
-        )
-    )
-
-    val avaliacoesFiltradas = avaliacoes.filter {
-        it.nomeAluno.contains(searchQuery.value, ignoreCase = true)
+    // Carrega na entrada inicial e ao voltar desta tela (ex: após criar/editar)
+    LaunchedEffect(navBackStackEntry) {
+        if (navBackStackEntry?.destination?.route == Screen.Avaliacoes.route) {
+            viewModel.loadAll()
+        }
     }
 
     Box(
@@ -122,12 +83,8 @@ fun AvaliacoesScreen(navController: NavController) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            ProfessorHeader(
-                onMenuClick = { showMenu.value = !showMenu.value }
-            )
+        Column(modifier = Modifier.fillMaxSize()) {
+            ProfessorHeader(onMenuClick = { showMenu.value = !showMenu.value })
 
             Spacer(
                 modifier = Modifier
@@ -136,105 +93,119 @@ fun AvaliacoesScreen(navController: NavController) {
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
 
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    "Avaliações Físicas",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontFamily = InterFont
-                )
-
-                Text(
-                    "evolução dos alunos",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = InterFont
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = SmartGymGreen
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
+                item {
                     Text(
-                        "+ Nova Avaliação",
+                        "Avaliacoes fisicas",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontFamily = InterFont
+                    )
+
+                    Text(
+                        "Evolucao dos alunos",
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = InterFont
                     )
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                TextField(
-                    value = searchQuery.value,
-                    onValueChange = { searchQuery.value = it },
-                    placeholder = {
+                    Button(
+                        onClick = {
+                            viewModel.clearForm()
+                            navController.navigate(Screen.NovaAvaliacao.route)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SmartGymGreen),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
                         Text(
-                            "Buscar avaliações...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = InterFont,
-                            fontSize = 13.sp
+                            "+ Nova avaliacao",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black,
+                            fontFamily = InterFont
                         )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Buscar",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(70.dp)
-                        .padding(vertical = 5.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    singleLine = true,
-                    textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                        fontSize = 13.sp,
-                        fontFamily = InterFont
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextField(
+                        value = searchQuery.value,
+                        onValueChange = {
+                            searchQuery.value = it
+                            if (it.isBlank()) viewModel.loadAll() else viewModel.loadByNomeAluno(it)
+                        },
+                        placeholder = {
+                            Text(
+                                "Buscar avaliacoes...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = InterFont,
+                                fontSize = 13.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Buscar",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(70.dp)
+                            .padding(vertical = 5.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+                        ),
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, fontFamily = InterFont)
                     )
-                )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // ✅ LAZYCOLUMN - Lista os cards de avaliações
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(avaliacoesFiltradas.size) { index ->
-                        AvaliacaoCard(avaliacao = avaliacoesFiltradas[index])
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(40.dp))
-                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
+
+                items(avaliacoes, key = { it.id }) { avaliacao ->
+                    AvaliacaoCard(
+                        avaliacao = avaliacao,
+                        onEdit = {
+                            if (it.id != 0) {
+                                viewModel.loadById(it.id)
+                                navController.navigate(Screen.NovaAvaliacao.route)
+                            }
+                        },
+                        onDelete = { avaliacaoToDelete = it }
+                    )
+                }
+
+                item { Spacer(modifier = Modifier.height(40.dp)) }
             }
+        }
+
+        if (avaliacaoToDelete != null) {
+            DeleteAvaliacaoDialog(
+                alunoNome = avaliacaoToDelete!!.nomeAluno,
+                onConfirm = {
+                    viewModel.delete(avaliacaoToDelete!!.id)
+                    avaliacaoToDelete = null
+                },
+                onDismiss = { avaliacaoToDelete = null }
+            )
         }
 
         ProfessorMenuOverlay(
@@ -246,34 +217,25 @@ fun AvaliacoesScreen(navController: NavController) {
 }
 
 @Composable
-fun AvaliacaoCard(avaliacao: Avaliacao) {
+fun AvaliacaoCard(
+    avaliacao: Avaliacao,
+    onEdit: (Avaliacao) -> Unit,
+    onDelete: (Avaliacao) -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(12.dp),
-                clip = false
-            )
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
-            )
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp), clip = false)
+            .background(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Nome do Aluno - Destaque Principal
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         avaliacao.nomeAluno,
                         fontSize = 18.sp,
@@ -292,22 +254,32 @@ fun AvaliacaoCard(avaliacao: Avaliacao) {
                     )
                 }
 
-                IconButton(
-                    onClick = {},
-                    modifier = Modifier
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Visibility,
-                        contentDescription = "Visualizar",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                    )
+                    IconButton(onClick = { onEdit(avaliacao) }, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    IconButton(onClick = { onDelete(avaliacao) }, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Deletar",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Separador
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -317,33 +289,17 @@ fun AvaliacaoCard(avaliacao: Avaliacao) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Métricas - Destacadas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                MetricaAvaliacao(
-                    label = "Peso",
-                    valor = avaliacao.peso,
-                    modifier = Modifier.weight(1f)
-                )
-
-                MetricaAvaliacao(
-                    label = "% Gordura",
-                    valor = avaliacao.percentualGordura,
-                    modifier = Modifier.weight(1f)
-                )
-
-                MetricaAvaliacao(
-                    label = "IMC",
-                    valor = avaliacao.imc,
-                    modifier = Modifier.weight(1f)
-                )
+                MetricaAvaliacao(label = "Peso", valor = "${avaliacao.peso} kg", modifier = Modifier.weight(1f))
+                MetricaAvaliacao(label = "% Gordura", valor = "${avaliacao.percentualGordura}%", modifier = Modifier.weight(1f))
+                MetricaAvaliacao(label = "IMC", valor = avaliacao.imc.toString(), modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Separador
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -353,11 +309,10 @@ fun AvaliacaoCard(avaliacao: Avaliacao) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Nota do Professor
             Text(
                 "\"${avaliacao.nota}\"",
                 fontSize = 12.sp,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = InterFont
             )
@@ -366,14 +321,8 @@ fun AvaliacaoCard(avaliacao: Avaliacao) {
 }
 
 @Composable
-fun MetricaAvaliacao(
-    label: String,
-    valor: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-    ) {
+fun MetricaAvaliacao(label: String, valor: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
         Text(
             label,
             fontSize = 11.sp,
@@ -391,5 +340,93 @@ fun MetricaAvaliacao(
             color = MaterialTheme.colorScheme.onBackground,
             fontFamily = InterFont
         )
+    }
+}
+
+ //oi
+
+
+@Composable
+fun DeleteAvaliacaoDialog(
+    alunoNome: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(24.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Deletar avaliacao",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = InterFont,
+                        color = Color.Black
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fechar",
+                            tint = Color.Black
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Gostaria de apagar a avaliacao de $alunoNome?",
+                    fontSize = 16.sp,
+                    fontFamily = InterFont,
+                    color = Color(0xFF8E8E8E)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFBDBD),
+                            contentColor = Color(0xFFD32F2F)
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                    ) {
+                        Text("Deletar", fontFamily = InterFont, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF5F5F5),
+                            contentColor = Color(0xFF8E8E8E)
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                    ) {
+                        Text("Cancelar", fontFamily = InterFont, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+        }
     }
 }
