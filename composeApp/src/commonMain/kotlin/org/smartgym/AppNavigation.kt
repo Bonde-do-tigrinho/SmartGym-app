@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Assignment
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
@@ -169,13 +169,129 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         }
 
         UserRole.PROFESSOR -> {
-            NavContent(
-                navController = navController,
-                userRole = userRole,
-                onLogout = onLogout,
-                modifier = Modifier.padding(16.dp),
-                snackbarHostState = snackbarHostState
+            val drawerState = rememberDrawerState(DrawerValue.Closed)
+            val scope = rememberCoroutineScope()
+
+            val professorItems = listOf(
+                Screen.HomeProfessor,
+                Screen.Exercicios,
+                Screen.Fichas,
+                Screen.Avaliacoes
             )
+
+            val professorLabels = mapOf(
+                Screen.HomeProfessor.route to "Dashboard",
+                Screen.Exercicios.route to "Exercícios",
+                Screen.Fichas.route to "Fichas",
+                Screen.Avaliacoes.route to "Avaliações"
+            )
+
+            val professorIcons = mapOf(
+                Screen.HomeProfessor.route to Icons.Outlined.Home,
+                Screen.Exercicios.route to Icons.Rounded.FitnessCenter,
+                Screen.Fichas.route to Icons.Rounded.Assignment,
+                Screen.Avaliacoes.route to Icons.Outlined.People
+            )
+
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
+                        Spacer(Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                            Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                        }
+                        Text("Área do Instrutor", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                        Spacer(Modifier.height(8.dp))
+
+                        professorItems.forEach { screen ->
+                            val selected = currentRoute == screen.route
+                            NavigationDrawerItem(
+                                shape = RoundedCornerShape(15.dp),
+                                label = { Text(professorLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                icon = { Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null) },
+                                selected = selected,
+                                onClick = {
+                                    navController.navigate(screen.route) { launchSingleTop = true }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = Color.Black,
+                                    selectedIconColor = Color.Black,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                        Spacer(Modifier.height(8.dp))
+
+                        NavigationDrawerItem(
+                            shape = RoundedCornerShape(15.dp),
+                            label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
+                            icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
+                            selected = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                onLogout()
+                            },
+                            modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
+                            colors = NavigationDrawerItemDefaults.colors(
+                                unselectedTextColor = MaterialTheme.colorScheme.error,
+                                unselectedIconColor = MaterialTheme.colorScheme.error
+                            )
+                        )
+                    }
+                }
+            ) {
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    snackbarHost = {
+                        SnackbarHost(hostState = snackbarHostState) { data ->
+                            Snackbar(
+                                snackbarData = data,
+                                containerColor = Color(0xFF1A1A1A),
+                                contentColor = Color(0xFFD9FF00),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    },
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                    Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                }
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                            modifier = Modifier.shadow(elevation = 5.dp)
+                        )
+                    }
+                ) { padding ->
+                    NavContent(
+                        navController = navController,
+                        userRole = userRole,
+                        onLogout = onLogout,
+                        modifier = Modifier.padding(padding),
+                        snackbarHostState = snackbarHostState
+                    )
+                }
+            }
         }
 
         UserRole.ADMIN -> {
@@ -304,6 +420,7 @@ fun NavContent(
     val treinoViewModel = remember { TreinoViewModel() }
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
+    val exerciciosViewModel = remember { ExerciciosViewModel() }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
