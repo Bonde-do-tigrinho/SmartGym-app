@@ -67,15 +67,6 @@ fun LoginScreen(
 
                         if (onLoginSuccess != null) {
                             onLoginSuccess(userRole)
-                        } else if (navController != null) {
-                            val destino = when (resultado.papel) {
-                                "admin" -> Screen.HomeAdmin.route
-                                "professor" -> Screen.HomeProfessor.route
-                                else -> Screen.HomeAluno.route
-                            }
-                            navController.navigate(destino) {
-                                popUpTo("login") { inclusive = true }
-                            }
                         }
                     } else {
                         scope.launch { snackbarHostState.showSnackbar("❌ ${resultado.mensagem}") }
