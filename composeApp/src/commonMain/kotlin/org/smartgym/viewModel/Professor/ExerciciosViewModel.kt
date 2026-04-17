@@ -8,10 +8,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.smartgym.model.professor.Exercicio
 import org.smartgym.model.professor.TipoExercicio
-import org.smartgym.repository.ExercicioRepository
+import org.smartgym.repository.ApiExercicioRepository
 
-class ExerciciosViewModel(private val repository: ExercicioRepository) : ViewModel() {
+class ExerciciosViewModel() : ViewModel() {
 
+    private val repository = ApiExercicioRepository()
     private val _exercicios = MutableStateFlow<List<Exercicio>>(emptyList())
     val exercicios: StateFlow<List<Exercicio>> = _exercicios.asStateFlow()
 

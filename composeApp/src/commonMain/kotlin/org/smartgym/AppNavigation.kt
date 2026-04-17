@@ -310,6 +310,7 @@ fun NavContent(
     val treinoViewModel = remember { TreinoViewModel() }
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
+    val exerciciosViewModel = remember { ExerciciosViewModel() }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
