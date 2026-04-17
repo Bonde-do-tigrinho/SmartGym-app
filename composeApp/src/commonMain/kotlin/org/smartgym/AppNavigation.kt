@@ -68,6 +68,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.network.ApiClient
+import org.smartgym.viewModel.Adm.PlanoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -309,21 +310,24 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             val scope = rememberCoroutineScope()
 
             val adminItems = listOf(
-                Screen.HomeAdmin,
-                Screen.AlunosAdmin,
-                Screen.UnidadesAdmin
+                Screen.HomeAdmin.route,
+                Screen.AlunosAdmin.route,
+                Screen.UnidadesAdmin.route,
+                "telaPlanos"
             )
 
             val adminLabels = mapOf(
                 Screen.HomeAdmin.route to "Dashboard",
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
+                "telaPlanos" to "Planos"
             )
 
             val adminIcons = mapOf(
                 Screen.HomeAdmin.route to Icons.Outlined.Home,
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
-                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
+                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
+                "telaPlanos" to Icons.Rounded.Assignment
             )
 
             ModalNavigationDrawer(
@@ -342,15 +346,15 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                         Spacer(Modifier.height(8.dp))
 
-                        adminItems.forEach { screen ->
-                            val selected = currentRoute == screen.route
+                        adminItems.forEach { rota ->
+                            val selected = currentRoute == rota
                             NavigationDrawerItem(
                                 shape = RoundedCornerShape(15.dp),
-                                label = { Text(adminLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
-                                icon = { Icon(adminIcons[screen.route] ?: Icons.Default.Home, contentDescription = null) },
+                                label = { Text(adminLabels[rota] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                icon = { Icon(adminIcons[rota] ?: Icons.Default.Home, contentDescription = null) },
                                 selected = selected,
                                 onClick = {
-                                    navController.navigate(screen.route) { launchSingleTop = true }
+                                    navController.navigate(rota) { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
@@ -427,6 +431,7 @@ fun NavContent(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState
 ) {
+    val planosViewModel = remember { PlanoViewModel() }
     val treinoViewModel = remember { TreinoViewModel() }
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
@@ -494,6 +499,9 @@ fun NavContent(
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
         composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, viewModel = alunosViewModel) }
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
+        composable("telaPlanos") {
+            org.smartgym.Screens.Adm.PlanosScreen(viewModel = planosViewModel)
+        }
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
         composable(
             route = Screen.EditarAluno.route + "/{alunoId}"

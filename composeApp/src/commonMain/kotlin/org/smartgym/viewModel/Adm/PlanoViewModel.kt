@@ -1,4 +1,4 @@
-package org.smartgym.viewModel
+package org.smartgym.viewModel.Adm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
