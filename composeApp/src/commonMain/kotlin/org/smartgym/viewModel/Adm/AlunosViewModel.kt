@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.smartgym.model.Adm.Aluno
 import org.smartgym.network.ApiClient
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class AlunosViewModel : ViewModel() {
 
@@ -39,6 +42,12 @@ class AlunosViewModel : ViewModel() {
         if (query.isBlank()) lista
         else lista.filter { it.nome.contains(query, ignoreCase = true) }
     }.stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), _alunos.value)
+
+    private val _snackbarEvent = MutableSharedFlow<String>()
+    val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
+
+    private val _navigationEvent = MutableSharedFlow<Unit>()
+    val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
     init{
         carregarAlunos()
@@ -83,7 +92,7 @@ class AlunosViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 val novoAluno = Aluno(
-                    id = 0,
+                    id = null,
                     nome = nome,
                     email = email,
                     telefone = telefone,
@@ -95,11 +104,16 @@ class AlunosViewModel : ViewModel() {
                     planoVencimento = null,
                     planoValor = null
                 )
+
                 client.post(ApiClient.getUrl("/alunos")) {
                     contentType(ContentType.Application.Json)
                     setBody(novoAluno)
                 }
-                carregarAlunos() // Atualiza a lista após salvar
+
+                carregarAlunos()
+                _snackbarEvent.emit("Aluno cadastrado com sucesso!")
+                _navigationEvent.emit(Unit)
+
             } catch (e: Exception) {
                 _errorMessage.value = "Erro ao adicionar aluno: ${e.message}"
             } finally {
@@ -113,7 +127,9 @@ class AlunosViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 client.delete(ApiClient.getUrl("/alunos/$id"))
-                carregarAlunos() // Atualiza a lista após deletar
+                carregarAlunos()
+                _snackbarEvent.emit("Aluno deletado com sucesso!")
+
             } catch (e: Exception) {
                 _errorMessage.value = "Erro ao deletar aluno: ${e.message}"
             } finally {
@@ -130,7 +146,11 @@ class AlunosViewModel : ViewModel() {
                     contentType(ContentType.Application.Json)
                     setBody(aluno)
                 }
-                carregarAlunos() // Atualiza a lista após editar
+
+                carregarAlunos()
+                _snackbarEvent.emit("Aluno atualizado com sucesso!")
+                _navigationEvent.emit(Unit)
+
             } catch (e: Exception) {
                 _errorMessage.value = "Erro ao editar aluno: ${e.message}"
             } finally {
@@ -141,5 +161,12 @@ class AlunosViewModel : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage
+
+    fun clearSuccess() {
+        _successMessage.value = null
     }
 }

@@ -18,6 +18,8 @@ import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,6 +37,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
 import org.smartgym.Screens.Adm.EditarAlunoScreen
@@ -96,9 +99,21 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         Screen.PerfilAluno.route to Icons.Rounded.Person
     )
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     when (userRole) {
         UserRole.ALUNO -> {
             Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = snackbarHostState) { data ->
+                        Snackbar(
+                            snackbarData = data,
+                            containerColor = Color(0xFF1A1A1A),
+                            contentColor = Color(0xFFD9FF00),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                },
                 containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     if (mostrarBottomNav) {
@@ -145,7 +160,9 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     navController = navController,
                     userRole = userRole,
                     onLogout = onLogout,
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.padding(padding),
+                    snackbarHostState = snackbarHostState
+
                 )
             }
         }
@@ -155,7 +172,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 navController = navController,
                 userRole = userRole,
                 onLogout = onLogout,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                snackbarHostState = snackbarHostState
             )
         }
 
@@ -180,7 +198,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
             )
-            val alunosViewModel: AlunosViewModel = viewModel()
 
             ModalNavigationDrawer(
                 drawerState = drawerState,
@@ -219,11 +236,41 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                 )
                             )
                         }
+                        Spacer(Modifier.height(16.dp))
+
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+
+                        Spacer(Modifier.height(8.dp))
+
+                        NavigationDrawerItem(
+                            label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
+                            icon = { Icon(Icons.Default.Menu, contentDescription = null) }, // pode trocar por logout depois
+                            selected = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                onLogout()
+                            },
+                            modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
+                            colors = NavigationDrawerItemDefaults.colors(
+                                unselectedTextColor = MaterialTheme.colorScheme.error,
+                                unselectedIconColor = MaterialTheme.colorScheme.error
+                            )
+                        )
                     }
                 }
             ) {
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
+                    snackbarHost = {
+                        SnackbarHost(hostState = snackbarHostState) { data ->
+                            Snackbar(
+                                snackbarData = data,
+                                containerColor = Color(0xFF1A1A1A),
+                                contentColor = Color(0xFFD9FF00),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    },
                     topBar = {
                         TopAppBar(
                             title = {
@@ -238,7 +285,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         )
                     }
                 ) { padding ->
-                    NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding))
+                    NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding), snackbarHostState = snackbarHostState)
                 }
             }
         }
@@ -250,11 +297,20 @@ fun NavContent(
     navController: NavHostController,
     userRole: UserRole,
     onLogout: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState
 ) {
     val treinoViewModel = remember { TreinoViewModel() }
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
+
+    LaunchedEffect(Unit) {
+        alunosViewModel.snackbarEvent.collectLatest { message ->
+            println("SNACKBAR: $message")
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = when (userRole) {
@@ -292,7 +348,7 @@ fun NavContent(
             route = Screen.EditarAluno.route + "/{alunoId}"
         ) { backStackEntry ->
             val alunoId = backStackEntry.arguments?.get("alunoId").toString().toInt()
-            EditarAlunoScreen(alunoId = alunoId, navController = navController)
+            EditarAlunoScreen(alunoId = alunoId, navController = navController, viewModel = alunosViewModel)
         }
     }
 }

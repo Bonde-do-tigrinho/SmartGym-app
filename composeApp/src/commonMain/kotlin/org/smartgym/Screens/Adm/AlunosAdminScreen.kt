@@ -141,7 +141,7 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
                             AlunoRow(
                                 aluno = aluno,
                                 onEditClick = {navController.navigate(Screen.EditarAluno.route + "/${aluno.id}")},
-                                onDeleteClick = {viewModel.deletarAluno(aluno.id)})
+                                onDeleteClick = {aluno.id?.let { viewModel.deletarAluno(it) }})
                             Divider(
                                 color = MaterialTheme.colorScheme.outlineVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp)
