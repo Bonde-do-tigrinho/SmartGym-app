@@ -30,6 +30,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -77,6 +78,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
     val editingId by viewModel.editingId.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     var alunoDropdownExpanded by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val isEditing = editingId != null
 
@@ -90,14 +92,26 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(colorScheme.background)
             .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(vertical = 8.dp)
         ) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(colorScheme.surfaceVariant)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+            ) {
             IconButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.padding(start = 0.dp)
@@ -105,23 +119,23 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Voltar",
-                    tint = Color(0xFF111827)
+                    tint = colorScheme.onBackground
                 )
             }
 
             Text(
-                text = "Avaliacoes",
+                text = "Avaliacões",
                 fontFamily = InterFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
-                color = Color(0xFF111827)
+                color = colorScheme.onBackground
             )
 
             Text(
                 text = if (isEditing) "Editando avaliacao" else "Criando nova avaliacao",
                 fontFamily = InterFont,
                 fontSize = 14.sp,
-                color = Color(0xFF6B7280)
+                color = colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -141,9 +155,25 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                         value = if (selectedAlunoId != null && nomeAluno.isNotBlank()) "$nomeAluno (ID: $selectedAlunoId)" else "",
                         onValueChange = {},
                         readOnly = true,
-                        placeholder = { Text("Selecione o aluno", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                        leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = Color(0xFF9CA3AF)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alunoDropdownExpanded) },
+                        placeholder = {
+                            Text(
+                                "Selecione o aluno",
+                                fontFamily = InterFont,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Person,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = alunoDropdownExpanded
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth().menuAnchor(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -157,7 +187,13 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                     ) {
                         alunosResumo.forEach { aluno ->
                             DropdownMenuItem(
-                                text = { Text("${aluno.nome} (ID: ${aluno.id})", fontFamily = InterFont) },
+                                text = {
+                                    Text(
+                                        "${aluno.nome} (ID: ${aluno.id})",
+                                        fontFamily = InterFont,
+                                        color = colorScheme.onSurface
+                                    )
+                                },
                                 onClick = {
                                     viewModel.updateSelectedAlunoId(aluno.id)
                                     alunoDropdownExpanded = false
@@ -171,8 +207,12 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 TextField(
                     value = dataAvaliacao,
                     onValueChange = viewModel::updateDataAvaliacao,
-                    placeholder = { Text("Ex: 2026-04-16", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    placeholder = {
+                        Text("Ex: 2026-04-16", fontFamily = InterFont, color = colorScheme.onSurfaceVariant)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = colorScheme.onSurfaceVariant)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
@@ -184,8 +224,12 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 TextField(
                     value = peso,
                     onValueChange = viewModel::updatePeso,
-                    placeholder = { Text("Ex: 78.5 kg", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.MonitorWeight, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    placeholder = {
+                        Text("Ex: 78.5 kg", fontFamily = InterFont, color = colorScheme.onSurfaceVariant)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.MonitorWeight, contentDescription = null, tint = colorScheme.onSurfaceVariant)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
@@ -197,8 +241,12 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 TextField(
                     value = percentualGordura,
                     onValueChange = viewModel::updatePercentualGordura,
-                    placeholder = { Text("Ex: 15.2%", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.Percent, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    placeholder = {
+                        Text("Ex: 15.2%", fontFamily = InterFont, color = colorScheme.onSurfaceVariant)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Percent, contentDescription = null, tint = colorScheme.onSurfaceVariant)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
@@ -210,8 +258,12 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 TextField(
                     value = imc,
                     onValueChange = viewModel::updateImc,
-                    placeholder = { Text("Ex: 25.6", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.FitnessCenter, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    placeholder = {
+                        Text("Ex: 25.6", fontFamily = InterFont, color = colorScheme.onSurfaceVariant)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.FitnessCenter, contentDescription = null, tint = colorScheme.onSurfaceVariant)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
@@ -223,8 +275,20 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                 TextField(
                     value = nota,
                     onValueChange = viewModel::updateNota,
-                    placeholder = { Text("Observacoes do professor", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Assignment, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    placeholder = {
+                        Text(
+                            "Observacoes do professor",
+                            fontFamily = InterFont,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.Assignment,
+                            contentDescription = null,
+                            tint = colorScheme.onSurfaceVariant
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
@@ -244,15 +308,18 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                     .fillMaxWidth()
                     .height(54.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SmartGymGreen),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SmartGymGreen,
+                    contentColor = colorScheme.onPrimary
+                ),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(color = Color.Black)
+                    CircularProgressIndicator(color = colorScheme.onPrimary)
                 } else {
                     Text(
                         text = "Salvar",
-                        color = Color.Black,
+                        color = colorScheme.onPrimary,
                         fontFamily = InterFont,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold
@@ -261,6 +328,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -272,18 +340,25 @@ private fun FormLabelAvaliacao(text: String) {
         fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
-        color = Color(0xFF111827),
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(start = 4.dp)
     )
 }
 
 @Composable
 private fun fieldColorsAvaliacao() = TextFieldDefaults.colors(
-    focusedContainerColor = Color(0xFFF9FAFB),
-    unfocusedContainerColor = Color(0xFFF9FAFB),
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
     focusedIndicatorColor = Color.Transparent,
     unfocusedIndicatorColor = Color.Transparent,
-    focusedTextColor = Color(0xFF4B5563),
-    unfocusedTextColor = Color(0xFF4B5563)
+    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+    focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    cursorColor = MaterialTheme.colorScheme.onBackground
 )
 

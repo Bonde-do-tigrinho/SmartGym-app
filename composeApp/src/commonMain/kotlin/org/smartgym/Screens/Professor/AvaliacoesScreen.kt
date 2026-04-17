@@ -98,7 +98,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
             ) {
                 item {
                     Text(
-                        "Avaliacoes fisicas",
+                        "Avaliacões físicas",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -106,7 +106,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                     )
 
                     Text(
-                        "Evolucao dos alunos",
+                        "Evolucão dos alunos",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = InterFont
@@ -126,7 +126,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            "+ Nova avaliacao",
+                            "+ Nova avaliaçõo",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.Black,
@@ -144,7 +144,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                         },
                         placeholder = {
                             Text(
-                                "Buscar avaliacoes...",
+                                "Buscar avaliacões...",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontFamily = InterFont,
                                 fontSize = 13.sp

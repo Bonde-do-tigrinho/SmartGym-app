@@ -15,15 +15,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.AccessibilityNew
-import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
@@ -75,6 +76,7 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
 
     var grupoExpanded by remember { mutableStateOf(false) }
     var equipamentoExpanded by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val equipamentos = listOf("Máquina", "Livre", "Halteres", "Polias", "Aerobicos")
 
@@ -85,23 +87,35 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(colorScheme.background)
             .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(vertical = 8.dp)
         ) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(colorScheme.surfaceVariant)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+            ) {
             // --- HEADER ---
             IconButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.padding(start = 0.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Voltar",
-                    tint = Color(0xFF111827)
+                    tint = colorScheme.onBackground
                 )
             }
 
@@ -110,14 +124,14 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                 fontFamily = InterFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
-                color = Color(0xFF111827)
+                color = colorScheme.onBackground
             )
 
             Text(
                 text = subtitleText,
                 fontFamily = InterFont,
                 fontSize = 14.sp,
-                color = Color(0xFF6B7280)
+                color = colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -134,9 +148,20 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                     TextField(
                         value = nome,
                         onValueChange = viewModel::updateNome,
-                        placeholder = { Text("Supino inclinado", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
+                        placeholder = {
+                            Text(
+                                "Supino inclinado",
+                                fontFamily = InterFont,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        },
                         leadingIcon = {
-                            Icon(Icons.Outlined.FitnessCenter, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.Outlined.FitnessCenter,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -151,9 +176,20 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                     TextField(
                         value = descricao,
                         onValueChange = viewModel::updateDescricao,
-                        placeholder = { Text("Exercício com foco no peitoral...", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
+                        placeholder = {
+                            Text(
+                                "Exercício com foco no peitoral...",
+                                fontFamily = InterFont,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        },
                         leadingIcon = {
-                            Icon(Icons.Outlined.Assignment, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.AutoMirrored.Outlined.Assignment,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -172,12 +208,25 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                             value = grupoMuscular,
                             onValueChange = {},
                             readOnly = true,
-                            placeholder = { Text("Selecione...", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
+                            placeholder = {
+                                Text(
+                                    "Selecione...",
+                                    fontFamily = InterFont,
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            },
                             leadingIcon = {
-                                Icon(Icons.Outlined.AccessibilityNew, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(20.dp))
+                                Icon(
+                                    Icons.Outlined.AccessibilityNew,
+                                    contentDescription = null,
+                                    tint = colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = grupoExpanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            modifier = Modifier
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                                .fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = fieldColors(),
                             textStyle = LocalTextStyle.current.copy(fontFamily = InterFont) // <-- Fonte do campo lido
@@ -186,11 +235,17 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                         ExposedDropdownMenu(
                             expanded = grupoExpanded,
                             onDismissRequest = { grupoExpanded = false },
-                            modifier = Modifier.background(Color.White)
+                            modifier = Modifier.background(colorScheme.surface)
                         ) {
                             listOf("Peito", "Costas", "Pernas", "Ombros", "Biceps", "Triceps").forEach { opcao ->
                                 DropdownMenuItem(
-                                    text = { Text(opcao, fontFamily = InterFont) },
+                                    text = {
+                                        Text(
+                                            opcao,
+                                            fontFamily = InterFont,
+                                            color = colorScheme.onSurface
+                                        )
+                                    },
                                     onClick = {
                                         viewModel.updateGrupoMuscular(opcao)
                                         grupoExpanded = false
@@ -212,10 +267,17 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                             onValueChange = {},
                             readOnly = true,
                             leadingIcon = {
-                                Icon(Icons.Outlined.Build, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(20.dp))
+                                Icon(
+                                    Icons.Outlined.Build,
+                                    contentDescription = null,
+                                    tint = colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = equipamentoExpanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            modifier = Modifier
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                                .fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = fieldColors(),
                             textStyle = LocalTextStyle.current.copy(fontFamily = InterFont) // <-- Fonte do campo lido
@@ -224,11 +286,17 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                         ExposedDropdownMenu(
                             expanded = equipamentoExpanded,
                             onDismissRequest = { equipamentoExpanded = false },
-                            modifier = Modifier.background(Color.White)
+                            modifier = Modifier.background(colorScheme.surface)
                         ) {
                             equipamentos.forEach { opcao ->
                                 DropdownMenuItem(
-                                    text = { Text(opcao, fontFamily = InterFont) },
+                                    text = {
+                                        Text(
+                                            opcao,
+                                            fontFamily = InterFont,
+                                            color = colorScheme.onSurface
+                                        )
+                                    },
                                     onClick = {
                                         equipamento = opcao
                                         val novoTipo = when(opcao) {
@@ -261,11 +329,14 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
                     .fillMaxWidth()
                     .height(54.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SmartGymGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SmartGymGreen,
+                    contentColor = colorScheme.onPrimary
+                )
             ) {
                 Text(
                     text = "Salvar",
-                    color = Color.Black,
+                    color = colorScheme.onPrimary,
                     fontFamily = InterFont,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
@@ -273,6 +344,7 @@ fun CriarExercicioScreen(navController: NavController, viewModel: ExerciciosView
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -284,17 +356,24 @@ private fun FormLabel(text: String) {
         fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
-        color = Color(0xFF111827),
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(start = 4.dp)
     )
 }
 
 @Composable
 private fun fieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = Color(0xFFF9FAFB),
-    unfocusedContainerColor = Color(0xFFF9FAFB),
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
     focusedIndicatorColor = Color.Transparent,
     unfocusedIndicatorColor = Color.Transparent,
-    focusedTextColor = Color(0xFF4B5563),
-    unfocusedTextColor = Color(0xFF4B5563)
+    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+    focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    cursorColor = MaterialTheme.colorScheme.onBackground
 )
