@@ -343,6 +343,9 @@ fun MetricaAvaliacao(label: String, valor: String, modifier: Modifier = Modifier
     }
 }
 
+ //oi
+
+
 @Composable
 fun DeleteAvaliacaoDialog(
     alunoNome: String,
