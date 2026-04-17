@@ -6,13 +6,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Payment
@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,11 +30,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
@@ -57,6 +61,11 @@ import org.smartgym.viewModel.aluno.TreinoViewModel
 import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType.Application.Json
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.network.ApiClient
 
@@ -96,7 +105,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
     val icons = mapOf(
         Screen.HomeAluno.route to Icons.Rounded.Home,
         Screen.Aparelhos.route to Icons.Rounded.FitnessCenter,
-        Screen.Treino.route to Icons.AutoMirrored.Rounded.Assignment,
+        Screen.Treino.route to Icons.Rounded.Assignment,
         Screen.Pagamentos.route to Icons.Rounded.Payment,
         Screen.PerfilAluno.route to Icons.Rounded.Person
     )
@@ -422,6 +431,9 @@ fun NavContent(
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
+    val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
+    val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
+    val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
@@ -429,23 +441,6 @@ fun NavContent(
             snackbarHostState.showSnackbar(message)
         }
     }
-
-    val httpClient = remember { ApiClient.client }
-    val exercicioRepository = remember { org.smartgym.repository.ApiExercicioRepository(httpClient) }
-    val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
-    val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
-
-    val exerciciosViewModel = remember { ExerciciosViewModel(exercicioRepository) }
-    val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
-
-    LaunchedEffect(Unit) {
-        avaliacoesViewModel.snackbarEvent.collectLatest { message ->
-            println("SNACKBAR: $message")
-            snackbarHostState.showSnackbar(message)
-        }
-    }
-
-    // ----------------------------------------------------------------
 
     NavHost(
         navController = navController,
@@ -487,16 +482,10 @@ fun NavContent(
 
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) {
-            AvaliacoesScreen(
-                navController = navController,
-                viewModel = avaliacoesViewModel
-            )
+            AvaliacoesScreen(navController = navController, viewModel = avaliacoesViewModel)
         }
         composable(Screen.NovaAvaliacao.route) {
-            CriarAvaliacaoScreen(
-                navController = navController,
-                viewModel = avaliacoesViewModel
-            )
+            CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel)
         }
 
         // ────────────────────────────────────────────────────
@@ -509,9 +498,11 @@ fun NavContent(
         composable(
             route = Screen.EditarAluno.route + "/{alunoId}"
         ) { backStackEntry ->
-            val alunoId = backStackEntry.arguments?.getString("alunoId")?.toIntOrNull() ?: return@composable
+            val alunoId = backStackEntry.destination.route
+                ?.substringAfterLast("/")
+                ?.toIntOrNull()
+                ?: return@composable
             EditarAlunoScreen(alunoId = alunoId, navController = navController, viewModel = alunosViewModel)
         }
     }
 }
-
