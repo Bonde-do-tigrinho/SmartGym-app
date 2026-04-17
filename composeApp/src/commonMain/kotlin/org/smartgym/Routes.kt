@@ -20,6 +20,7 @@ sealed class Screen(val route: String){
     //Rotas do admin
     object HomeAdmin: Screen("home_admin")
     object UnidadesAdmin : Screen("unidades_admin")
+    object MaquinasAdmin : Screen("maquinas_admin")
     object AlunosAdmin: Screen("alunos_admin")
     object NovoAluno : Screen("novo_aluno")
     object EditarAluno : Screen("editar_aluno")
