@@ -192,18 +192,22 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.HomeAdmin,
                 Screen.AlunosAdmin,
                 Screen.UnidadesAdmin
+                Screen.UnidadesAdmin,
+                Screen.MaquinasAdmin
             )
 
             val adminLabels = mapOf(
                 Screen.HomeAdmin.route to "Dashboard",
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
+                Screen.MaquinasAdmin.route to "Máquinas"
             )
 
             val adminIcons = mapOf(
                 Screen.HomeAdmin.route to Icons.Outlined.Home,
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
-                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment
+                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
+                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter
             )
 
             ModalNavigationDrawer(
