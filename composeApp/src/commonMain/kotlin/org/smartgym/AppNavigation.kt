@@ -1,5 +1,6 @@
 package org.smartgym
 
+import MaquinaViewModel
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
@@ -66,6 +68,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.smartgym.Screens.Adm.MaquinasAdminScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
@@ -321,6 +324,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
                 "telaPlanos" to "Planos"
+                Screen.MaquinasAdmin.route to "Máquinas"
             )
 
             val adminIcons = mapOf(
@@ -328,6 +332,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
                 "telaPlanos" to Icons.Rounded.Assignment
+                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter
             )
 
             ModalNavigationDrawer(
@@ -470,7 +475,6 @@ fun NavContent(
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
 
-        // --- MUDANÇA AQUI: Passando o viewModel para a ExerciciosScreen ---
         composable(Screen.Exercicios.route) {
             ExerciciosScreen(
                 navController = navController,
@@ -483,7 +487,6 @@ fun NavContent(
                 viewModel = exerciciosViewModel
             )
         }
-        // ------------------------------------------------------------------
 
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) {
@@ -514,3 +517,4 @@ fun NavContent(
         }
     }
 }
+

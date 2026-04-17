@@ -108,7 +108,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            Text("FITGYM.", color = colors.onBackground, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+            Text("SMARTGYM.", color = colors.onBackground, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
             Text("Sistema de Gestão de Academia", color = colors.onSurfaceVariant, fontSize = 14.sp)
 
             Spacer(Modifier.height(48.dp))

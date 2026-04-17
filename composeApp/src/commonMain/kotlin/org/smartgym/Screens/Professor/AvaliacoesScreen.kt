@@ -66,7 +66,6 @@ private val InterFont @Composable get() = FontFamily(
 @Composable
 fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewModel) {
     val searchQuery = remember { mutableStateOf("") }
-    val showMenu = remember { mutableStateOf(false) }
     val avaliacoes by viewModel.avaliacoes.collectAsState()
     var avaliacaoToDelete by remember { mutableStateOf<Avaliacao?>(null) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -84,8 +83,6 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
             .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            ProfessorHeader(onMenuClick = { showMenu.value = !showMenu.value })
-
             Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -207,12 +204,6 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                 onDismiss = { avaliacaoToDelete = null }
             )
         }
-
-        ProfessorMenuOverlay(
-            showMenu = showMenu.value,
-            onDismiss = { showMenu.value = false },
-            navController = navController
-        )
     }
 }
 
