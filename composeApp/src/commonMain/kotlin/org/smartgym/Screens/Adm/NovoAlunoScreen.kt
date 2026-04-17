@@ -11,11 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.collectLatest
 import org.smartgym.viewModel.Adm.AlunosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,20 +27,28 @@ import org.smartgym.viewModel.Adm.AlunosViewModel
 fun NovoAlunoScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: AlunosViewModel = viewModel()
+    viewModel: AlunosViewModel
 ) {
     val scrollState = rememberScrollState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Estados dos campos
     var nome by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var telefone by remember { mutableStateOf("") }
-    var cpf by remember { mutableStateOf("") }
     var planoSelecionado by remember { mutableStateOf("") }
     var status by remember { mutableStateOf(true) }
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     val planos = listOf("Basic", "Premium", "Black")
+
+    var cpfRaw by remember { mutableStateOf("") }
+    var telefoneRaw by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collectLatest {
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -71,9 +83,12 @@ fun NovoAlunoScreen(
             )
             CampoTexto(
                 label = "CPF",
-                value = cpf,
-                onValueChange = { cpf = it },
-                keyboardType = KeyboardType.Number
+                value = cpfRaw,
+                onValueChange = {
+                    if (it.length <= 11) cpfRaw = it.filter { c -> c.isDigit() }
+                },
+                keyboardType = KeyboardType.Number,
+                visualTransformation = CpfVisualTransformation()
             )
 
             SectionTitle("Contato")
@@ -86,9 +101,12 @@ fun NovoAlunoScreen(
             )
             CampoTexto(
                 label = "Telefone",
-                value = telefone,
-                onValueChange = { telefone = it },
-                keyboardType = KeyboardType.Phone
+                value = telefoneRaw,
+                onValueChange = {
+                    if (it.length <= 11) telefoneRaw = it.filter { c -> c.isDigit() }
+                },
+                keyboardType = KeyboardType.Phone,
+                visualTransformation = TelefoneVisualTransformation()
             )
 
             SectionTitle("Plano")
@@ -153,18 +171,24 @@ fun NovoAlunoScreen(
             }
 
             Spacer(Modifier.height(8.dp))
+            if (isLoading) {
+                CircularProgressIndicator()
+            }
 
+            errorMessage?.let {
+                Text(it, color = Color.Red)
+            }
             Button(
                 onClick = {
                     viewModel.adicionarAluno(
                         nome = nome,
                         email = email,
-                        cpf = cpf,
-                        telefone = telefone,
+                        cpf = cpfRaw,
+                        telefone = telefoneRaw,
                         plano = planoSelecionado,
                         status = status,
                     )
-                    navController.popBackStack()
+
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -199,7 +223,8 @@ fun CampoTexto(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     OutlinedTextField(
         value = value,
@@ -208,29 +233,8 @@ fun CampoTexto(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        singleLine = true
+        singleLine = true,
+        visualTransformation = visualTransformation
     )
 }
 
-fun mascaraCpf(input: String): String {
-    val digits = input.filter { it.isDigit() }.take(11)
-    return buildString {
-        digits.forEachIndexed { i, c ->
-            if (i == 3 || i == 6) append('.')
-            if (i == 9) append('-')
-            append(c)
-        }
-    }
-}
-
-fun mascaraTelefone(input: String): String {
-    val digits = input.filter { it.isDigit() }.take(11)
-    return buildString {
-        digits.forEachIndexed { i, c ->
-            if (i == 0) append('(')
-            if (i == 2) append(") ")
-            if (i == 7) append('-')
-            append(c)
-        }
-    }
-}
