@@ -50,6 +50,7 @@ import org.smartgym.Screens.Aluno.PagamentosScreen
 import org.smartgym.Screens.Aluno.PerfilAlunoScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
+import org.smartgym.Screens.Professor.CriarExercicioScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Professor.HomeProfessorScreen
@@ -57,6 +58,12 @@ import org.smartgym.viewModel.aluno.AparelhosViewModel
 import org.smartgym.viewModel.aluno.TreinoViewModel
 import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
+import org.smartgym.viewModel.Professor.ExerciciosViewModel
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType.Application.Json
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -333,7 +340,22 @@ fun NavContent(
         }
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
-        composable(Screen.Exercicios.route) { ExerciciosScreen(navController) }
+
+        // --- MUDANÇA AQUI: Passando o viewModel para a ExerciciosScreen ---
+        composable(Screen.Exercicios.route) {
+            ExerciciosScreen(
+                navController = navController,
+                viewModel = exerciciosViewModel
+            )
+        }
+        composable(Screen.NovoExercicio.route) {
+            CriarExercicioScreen(
+                navController = navController,
+                viewModel = exerciciosViewModel
+            )
+        }
+        // ------------------------------------------------------------------
+
         composable(Screen.Fichas.route) { FichasScreen(navController) }
         composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
 

@@ -12,6 +12,7 @@ sealed class Screen(val route: String){
     //Rotas do professor
     object HomeProfessor : Screen("home_professor")
     object Exercicios : Screen("exercicios")
+    object NovoExercicio : Screen("novo_exercicio")
     object Fichas : Screen("fichas")
     object Avaliacoes : Screen("avaliacoes")
 

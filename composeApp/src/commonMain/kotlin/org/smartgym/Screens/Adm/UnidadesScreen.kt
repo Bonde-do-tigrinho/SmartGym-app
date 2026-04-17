@@ -7,14 +7,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.OutlinedFlag
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -22,37 +19,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-// Estrutura de dados temporária (Mock)
-data class Unidade(
-    val nome: String,
-    val endereco: String,
-    val cidade: String,
-    val alunos: Int,
-    val instrutores: Int
-)
-
-val mockUnidades = listOf(
-    Unidade("Unidade Centro", "Rua Principal, 123", "São Paulo - SP", 320, 12),
-    Unidade("Unidade Zona Sul", "Av. Paulista, 456", "São Paulo - SP", 189, 8),
-    Unidade("Unidade Zona Oeste", "Rua Secundária, 789", "São Paulo - SP", 80, 4)
-)
+import androidx.lifecycle.viewmodel.compose.viewModel
+import org.smartgym.model.Adm.Unidade
+import org.smartgym.viewModel.Adm.UnidadesViewModel
 
 @Composable
-fun UnidadesScreen(modifier: Modifier = Modifier) {
+fun UnidadesScreen(
+    modifier: Modifier = Modifier,
+    viewModel: UnidadesViewModel = viewModel { UnidadesViewModel() }
+) {
+    val mostrandoFormulario by viewModel.mostrandoFormulario.collectAsState()
+
+    if (mostrandoFormulario) {
+        FormularioUnidade(viewModel, modifier)
+    } else {
+        ListagemUnidades(viewModel, modifier)
+    }
+}
+
+// ----------------------------------------------------
+// TELA DE LISTAGEM
+// ----------------------------------------------------
+@Composable
+fun ListagemUnidades(viewModel: UnidadesViewModel, modifier: Modifier) {
+    val listaDeUnidades by viewModel.listaUnidades.collectAsState()
+
+    var unidadeIdParaApagar by remember { mutableStateOf<String?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        // Cabeçalho e Botão Corrigidos
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // O weight(1f) faz o texto ocupar o espaço correto e quebrar a linha
             Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                 Text(
                     text = "Unidades",
@@ -63,21 +67,23 @@ fun UnidadesScreen(modifier: Modifier = Modifier) {
                 Text(
                     text = "Gerencia as unidades da academia",
                     fontSize = 14.sp,
-                    lineHeight = 18.sp, // Ajuda no espaçamento se quebrar a linha
+                    lineHeight = 18.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Button(
-                onClick = { /* Ação de nova unidade */ },
+                onClick = {
+                    viewModel.limparCampos()
+                    viewModel.mostrandoFormulario.value = true
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                modifier = Modifier.height(36.dp) // Altura forçada para deixar mais fino
+                modifier = Modifier.height(36.dp)
             ) {
-                // Reduzindo um pouquinho o ícone e a fonte para caber no botão mais fino
                 Icon(Icons.Default.Add, contentDescription = "Adicionar", tint = Color.Black, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Nova Unidade", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -86,20 +92,119 @@ fun UnidadesScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Lista de Cards
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(mockUnidades) { unidade ->
-                UnidadeCard(unidade)
+            items(listaDeUnidades) { unidade ->
+                UnidadeCard(
+                    unidade = unidade,
+                    onEditClick = { viewModel.prepararEdicao(unidade) },
+                    onDeleteClick = { unidadeIdParaApagar = unidade.id }
+                )
             }
+        }
+    }
+
+    if (unidadeIdParaApagar != null) {
+        AlertDialog(
+            onDismissRequest = { unidadeIdParaApagar = null },
+            title = {
+                Text(text = "Excluir unidade", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("Tem certeza que deseja apagar esta unidade? Esta ação não poderá ser desfeita e afetará alunos e professores vinculados." , color = MaterialTheme.colorScheme.onBackground)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.apagar(unidadeIdParaApagar!!)
+                        unidadeIdParaApagar = null
+                    },
+                    // Alterado para a cor primária (Verde)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Sim, excluir", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { unidadeIdParaApagar = null }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+}
+
+// ----------------------------------------------------
+// TELA DE FORMULÁRIO
+// ----------------------------------------------------
+@Composable
+fun FormularioUnidade(viewModel: UnidadesViewModel, modifier: Modifier) {
+    val nome by viewModel.nomeAtual.collectAsState()
+    val endereco by viewModel.enderecoAtual.collectAsState()
+    val cidade by viewModel.cidadeAtual.collectAsState()
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Cadastrar nova Unidade", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+
+        OutlinedTextField(
+            value = nome,
+            onValueChange = { viewModel.nomeAtual.value = it },
+            label = { Text("Nome da Unidade") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = endereco,
+            onValueChange = { viewModel.enderecoAtual.value = it },
+            label = { Text("Endereço") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = cidade,
+            onValueChange = { viewModel.cidadeAtual.value = it },
+            label = { Text("Cidade") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { viewModel.gravar() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Salvar")
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.limparCampos() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Limpar")
+            }
+        }
+
+        TextButton(onClick = { viewModel.mostrandoFormulario.value = false }) {
+            Text("Cancelar")
         }
     }
 }
 
+// ----------------------------------------------------
+// DESIGN DO CARD
+// ----------------------------------------------------
 @Composable
-fun UnidadeCard(unidade: Unidade) {
+fun UnidadeCard(unidade: Unidade, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -126,11 +231,11 @@ fun UnidadeCard(unidade: Unidade) {
                 }
 
                 Row {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = onEditClick) {
                         Icon(Icons.Outlined.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(Icons.Outlined.Delete, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }

@@ -78,7 +78,6 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(compose.materialIconsExtended)
             implementation(libs.koalaplot)
-
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0-beta01")
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.0-beta01")
             implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.2")
