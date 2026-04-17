@@ -24,13 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.jetbrains.compose.resources.Font
+import org.smartgym.Screen
 import org.smartgym.theme.SmartGymGreen
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
@@ -183,14 +183,18 @@ fun HomeProfessorScreen(navController: NavController) {
                     texto = "+ Nova Avaliação Física",
                     backgroundColor = Color(0xFF1F2937),
                     textColor = Color.White,
-                    onClick = {}
+                    onClick = {
+                        navController.navigate(Screen.NovaAvaliacao.route)
+                    }
                 )
 
                 BotaoAcaoRapida(
                     texto = "+ Novo Exercício",
                     backgroundColor = Color(0xFFF3F4F6),
                     textColor = Color.Black,
-                    onClick = {}
+                    onClick = {
+                        navController.navigate(Screen.NovoExercicio.route)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(80.dp))

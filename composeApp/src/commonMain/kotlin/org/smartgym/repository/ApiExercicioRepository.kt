@@ -32,8 +32,15 @@ class ApiExercicioRepository {
 
     suspend fun delete(id: Long) = client.delete(url("/$id"))
 
-    suspend fun getByNome(nome: String): List<Exercicio> =
-        client.get(url("/search?nome=$nome")).body()
+    suspend fun getByNome(nome: String): List<Exercicio> {
+        val termo = nome.trim()
+        if (termo.isBlank()) return getAll()
+
+        return getAll().filter { exercicio ->
+            exercicio.nome.contains(termo, ignoreCase = true) ||
+                exercicio.id?.toString() == termo
+        }
+    }
 
     suspend fun getByMaquina(maquinaId: Long): List<Exercicio> =
         client.get(url("/maquina/$maquinaId")).body()

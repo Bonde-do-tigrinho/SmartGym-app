@@ -51,6 +51,7 @@ import org.smartgym.Screens.Aluno.PagamentosScreen
 import org.smartgym.Screens.Aluno.PerfilAlunoScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
+import org.smartgym.Screens.Professor.CriarAvaliacaoScreen
 import org.smartgym.Screens.Professor.CriarExercicioScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
@@ -65,6 +66,8 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.smartgym.viewModel.Professor.AvaliacoesViewModel
+import org.smartgym.network.ApiClient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -428,6 +431,9 @@ fun NavContent(
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
+    val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
+    val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
+    val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
@@ -475,7 +481,12 @@ fun NavContent(
         // ------------------------------------------------------------------
 
         composable(Screen.Fichas.route) { FichasScreen(navController) }
-        composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
+        composable(Screen.Avaliacoes.route) {
+            AvaliacoesScreen(navController = navController, viewModel = avaliacoesViewModel)
+        }
+        composable(Screen.NovaAvaliacao.route) {
+            CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel)
+        }
 
         // ────────────────────────────────────────────────────
         // ADMIN
@@ -487,9 +498,11 @@ fun NavContent(
         composable(
             route = Screen.EditarAluno.route + "/{alunoId}"
         ) { backStackEntry ->
-            val alunoId = backStackEntry.arguments?.get("alunoId").toString().toInt()
+            val alunoId = backStackEntry.destination.route
+                ?.substringAfterLast("/")
+                ?.toIntOrNull()
+                ?: return@composable
             EditarAlunoScreen(alunoId = alunoId, navController = navController, viewModel = alunosViewModel)
         }
     }
 }
-
