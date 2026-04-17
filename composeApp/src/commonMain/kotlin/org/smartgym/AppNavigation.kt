@@ -316,14 +316,15 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.HomeAdmin.route,
                 Screen.AlunosAdmin.route,
                 Screen.UnidadesAdmin.route,
-                "telaPlanos"
+                "telaPlanos",
+                Screen.MaquinasAdmin.route
             )
 
             val adminLabels = mapOf(
                 Screen.HomeAdmin.route to "Dashboard",
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
-                "telaPlanos" to "Planos"
+                "telaPlanos" to "Planos",
                 Screen.MaquinasAdmin.route to "Máquinas"
             )
 
@@ -331,7 +332,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.HomeAdmin.route to Icons.Outlined.Home,
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
-                "telaPlanos" to Icons.Rounded.Assignment
+                "telaPlanos" to Icons.Rounded.Assignment,
                 Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter
             )
 
@@ -441,6 +442,7 @@ fun NavContent(
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
+    val maquinaViewModel = remember { MaquinaViewModel() }
     val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
     val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
     val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
@@ -462,10 +464,26 @@ fun NavContent(
         modifier = modifier
     ) {
         composable(Screen.HomeAluno.route) {
-            val usuarioLogado = UserHomeData("Leandro", "TREINO A", "Peito e Tríceps", 5, 12, 4, "Rafael Silva", 4.9, "15/04/2026", "R$ 149,90")
+            val usuarioLogado = UserHomeData(
+                "Leandro",
+                "TREINO A",
+                "Peito e Tríceps",
+                5,
+                12,
+                4,
+                "Rafael Silva",
+                4.9,
+                "15/04/2026",
+                "R$ 149,90"
+            )
             HomeScreen(navController = navController, userData = usuarioLogado)
         }
-        composable(Screen.Aparelhos.route) { AparelhosScreen(navController = navController, viewModel = aparelhosViewModel) }
+        composable(Screen.Aparelhos.route) {
+            AparelhosScreen(
+                navController = navController,
+                viewModel = aparelhosViewModel
+            )
+        }
         composable(Screen.Treino.route) { TreinoScreen(navController = navController, viewModel = treinoViewModel) }
         composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
 
@@ -496,16 +514,23 @@ fun NavContent(
             CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel)
         }
 
-        // ────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────
         // ADMIN
         // ────────────────────────────────────────────────────
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
         composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, viewModel = alunosViewModel) }
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
+
         composable("telaPlanos") {
             org.smartgym.Screens.Adm.PlanosScreen(viewModel = planosViewModel)
         }
+
+        composable(Screen.MaquinasAdmin.route) {
+            MaquinasAdminScreen(viewModel = maquinaViewModel)
+        }
+
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
+
         composable(
             route = Screen.EditarAluno.route + "/{alunoId}"
         ) { backStackEntry ->
@@ -517,4 +542,3 @@ fun NavContent(
         }
     }
 }
-
