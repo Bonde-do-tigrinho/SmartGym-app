@@ -63,7 +63,7 @@ Para compilar e rodar o projeto, você precisará de:
 
 **1. Clonar o Repositório:**
 ```bash
-git clone [https://github.com/seu-usuario/SmartGym-App.git](https://github.com/seu-usuario/SmartGym-App.git)
+git clone [https://github.com/Bonde-do-tigrinho/SmartGym-app.git]
 cd SmartGym-App
 ```
 
