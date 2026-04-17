@@ -47,6 +47,7 @@ import org.smartgym.Screens.Aluno.PagamentosScreen
 import org.smartgym.Screens.Aluno.PerfilAlunoScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
+import org.smartgym.Screens.Professor.CriarAvaliacaoScreen
 import org.smartgym.Screens.Professor.CriarExercicioScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
@@ -56,6 +57,7 @@ import org.smartgym.viewModel.aluno.TreinoViewModel
 import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
+import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
@@ -275,8 +277,10 @@ fun NavContent(
     }
 
     val exercicioRepository = remember { org.smartgym.repository.ApiExercicioRepository(httpClient) }
+    val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository(httpClient) }
 
     val exerciciosViewModel = remember { ExerciciosViewModel(exercicioRepository) }
+    val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository) }
 
     // ----------------------------------------------------------------
 
@@ -319,7 +323,18 @@ fun NavContent(
         // ------------------------------------------------------------------
 
         composable(Screen.Fichas.route) { FichasScreen(navController) }
-        composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController) }
+        composable(Screen.Avaliacoes.route) {
+            AvaliacoesScreen(
+                navController = navController,
+                viewModel = avaliacoesViewModel
+            )
+        }
+        composable(Screen.NovaAvaliacao.route) {
+            CriarAvaliacaoScreen(
+                navController = navController,
+                viewModel = avaliacoesViewModel
+            )
+        }
 
         // ────────────────────────────────────────────────────
         // ADMIN
