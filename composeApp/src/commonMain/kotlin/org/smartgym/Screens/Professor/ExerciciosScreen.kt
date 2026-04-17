@@ -83,9 +83,6 @@ fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewMode
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            ProfessorHeader(
-                onMenuClick = { showMenu.value = !showMenu.value }
-            )
 
             Spacer(
                 modifier = Modifier
@@ -219,13 +216,6 @@ fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewMode
                 }
             )
         }
-        // --------------------------------------------------------------------------------
-
-        ProfessorMenuOverlay(
-            showMenu = showMenu.value,
-            onDismiss = { showMenu.value = false },
-            navController = navController
-        )
     }
 }
 
