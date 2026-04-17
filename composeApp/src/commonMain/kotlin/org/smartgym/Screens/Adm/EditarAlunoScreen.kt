@@ -14,8 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.collectLatest
 import org.smartgym.viewModel.Adm.AlunosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,29 +24,37 @@ fun EditarAlunoScreen(
     navController: NavController,
     alunoId: Int,
     modifier: Modifier = Modifier,
-    viewModel: AlunosViewModel = viewModel()
+    viewModel: AlunosViewModel // ✅ sem = viewModel()
 ) {
     val alunos by viewModel.alunos.collectAsState()
     val aluno = alunos.find { it.id == alunoId }
 
-    // Se o aluno não for encontrado, volta para a tela anterior
     if (aluno == null) {
         LaunchedEffect(Unit) { navController.popBackStack() }
         return
     }
 
     val scrollState = rememberScrollState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Estados dos campos preenchidos com os dados do aluno
     var nome by remember { mutableStateOf(aluno.nome) }
     var email by remember { mutableStateOf(aluno.email) }
-    var telefone by remember { mutableStateOf(aluno.telefone) }
-    var cpf by remember { mutableStateOf(aluno.cpf) }
+
+    var cpfRaw by remember { mutableStateOf(aluno.cpf.filter { it.isDigit() }) }
+    var telefoneRaw by remember { mutableStateOf(aluno.telefone.filter { it.isDigit() }) }
+
     var planoSelecionado by remember { mutableStateOf(aluno.plano) }
     var ativo by remember { mutableStateOf(aluno.status) }
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     val planos = listOf("Basic", "Premium", "Black")
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collectLatest {
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -79,14 +87,15 @@ fun EditarAlunoScreen(
                 value = nome,
                 onValueChange = { nome = it }
             )
+
             CampoTexto(
                 label = "CPF",
-                value = cpf,
-                onValueChange = { novoValor ->
-                    val apenasDigitos = novoValor.filter { it.isDigit() }.take(11)
-                    cpf = mascaraCpf(apenasDigitos)
+                value = cpfRaw,
+                onValueChange = {
+                    if (it.length <= 11) cpfRaw = it.filter { c -> c.isDigit() }
                 },
-                keyboardType = KeyboardType.Number
+                keyboardType = KeyboardType.Number,
+                visualTransformation = CpfVisualTransformation()
             )
 
             SectionTitle("Contato")
@@ -97,14 +106,15 @@ fun EditarAlunoScreen(
                 onValueChange = { email = it },
                 keyboardType = KeyboardType.Email
             )
+
             CampoTexto(
                 label = "Telefone",
-                value = telefone,
-                onValueChange = { novoValor ->
-                    val apenasDigitos = novoValor.filter { it.isDigit() }.take(11)
-                    telefone = mascaraTelefone(apenasDigitos)
+                value = telefoneRaw,
+                onValueChange = {
+                    if (it.length <= 11) telefoneRaw = it.filter { c -> c.isDigit() }
                 },
-                keyboardType = KeyboardType.Phone
+                keyboardType = KeyboardType.Phone,
+                visualTransformation = TelefoneVisualTransformation()
             )
 
             SectionTitle("Plano")
@@ -170,20 +180,23 @@ fun EditarAlunoScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Botão Salvar
+            if (isLoading) CircularProgressIndicator()
+
+            errorMessage?.let {
+                Text(it, color = Color.Red)
+            }
+
             Button(
                 onClick = {
                     viewModel.editarAluno(
                         aluno.copy(
                             nome = nome,
                             email = email,
-                            telefone = telefone,
-                            cpf = cpf,
+                            telefone = telefoneRaw,
                             plano = planoSelecionado,
                             status = ativo
                         )
                     )
-                    navController.popBackStack()
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
