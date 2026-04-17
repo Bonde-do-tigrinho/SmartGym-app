@@ -6,25 +6,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,11 +42,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import org.jetbrains.compose.resources.Font
+import org.smartgym.Screen
 import org.smartgym.model.professor.Exercicio
 import org.smartgym.model.professor.TipoExercicio
-import org.smartgym.theme.SmartGymGreen
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
@@ -68,14 +65,11 @@ private val InterFont @Composable get() = FontFamily(
 fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewModel) {
     val searchQuery = remember { mutableStateOf("") }
     val showMenu = remember { mutableStateOf(false) }
-    val showForm = remember { mutableStateOf(false) }
 
     val exercicios by viewModel.exercicios.collectAsState()
-    val nome by viewModel.nome.collectAsState()
-    val descricao by viewModel.descricao.collectAsState()
-    val tipo by viewModel.tipo.collectAsState()
-    val maquinaId by viewModel.maquinaId.collectAsState()
-    val editingId by viewModel.editingId.collectAsState()
+
+    // Variável que controla qual exercício será deletado no modal
+    var exercicioToDelete by remember { mutableStateOf<Exercicio?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAll()
@@ -100,14 +94,12 @@ fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewMode
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
 
-            // AQUI COMEÇA A MUDANÇA: Usamos apenas LazyColumn para gerenciar o scroll da tela inteira
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // item 1: Agrupa todo o cabeçalho, botão de novo exercício, formulário e campo de busca
                 item {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
@@ -128,43 +120,24 @@ fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewMode
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = { showForm.value = !showForm.value },
+                            onClick = {
+                                viewModel.clearForm()
+                                navController.navigate(Screen.NovoExercicio.route)
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = SmartGymGreen
+                                containerColor = MaterialTheme.colorScheme.primary
                             ),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                if (editingId != null) "Editar Exercício" else "+ Novo Exercício",
+                                "+ Novo Exercício",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.Black,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontFamily = InterFont
-                            )
-                        }
-
-                        if (showForm.value) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            ExercicioForm(
-                                nome = nome,
-                                onNomeChange = viewModel::updateNome,
-                                descricao = descricao,
-                                onDescricaoChange = viewModel::updateDescricao,
-                                tipo = tipo,
-                                onTipoChange = viewModel::updateTipo,
-                                maquinaId = maquinaId,
-                                onMaquinaIdChange = viewModel::updateMaquinaId,
-                                onSave = {
-                                    viewModel.save()
-                                    showForm.value = false
-                                },
-                                onCancel = {
-                                    viewModel.clearForm()
-                                    showForm.value = false
-                                }
                             )
                         }
 
@@ -215,21 +188,38 @@ fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewMode
                     }
                 }
 
-                // item 2: A lista de exercícios em si (gerada dinamicamente)
                 items(exercicios.size) { index ->
                     ExercicioCard(
                         exercicio = exercicios[index],
-                        onEdit = { viewModel.loadById(it.id!!) ; showForm.value = true },
-                        onDelete = { viewModel.delete(it.id!!) }
+                        onEdit = {
+                            viewModel.loadById(it.id!!)
+                            navController.navigate(Screen.NovoExercicio.route)
+                        },
+                        // AQUI ESTÁ O PASSO 3: Quando clica na lixeira, salva no estado em vez de deletar direto
+                        onDelete = { exercicioToDelete = it }
                     )
                 }
 
-                // item 3: Espaçador final
                 item {
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }
+
+        // --- AQUI É O RESTANTE DO PASSO 3: Chama o Modal se a variável não for nula ---
+        if (exercicioToDelete != null) {
+            DeleteConfirmationDialog(
+                exercicioNome = exercicioToDelete!!.nome,
+                onConfirm = {
+                    viewModel.delete(exercicioToDelete!!.id!!) // Confirma e deleta do banco
+                    exercicioToDelete = null // Esconde o modal
+                },
+                onDismiss = {
+                    exercicioToDelete = null // Cancela e apenas esconde o modal
+                }
+            )
+        }
+        // --------------------------------------------------------------------------------
 
         ProfessorMenuOverlay(
             showMenu = showMenu.value,
@@ -239,112 +229,6 @@ fun ExerciciosScreen(navController: NavController, viewModel: ExerciciosViewMode
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ExercicioForm(
-    nome: String,
-    onNomeChange: (String) -> Unit,
-    descricao: String,
-    onDescricaoChange: (String) -> Unit,
-    tipo: TipoExercicio,
-    onTipoChange: (TipoExercicio) -> Unit,
-    maquinaId: Long?,
-    onMaquinaIdChange: (Long?) -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-            .padding(16.dp)
-    ) {
-        Text("Nome", fontFamily = InterFont, fontWeight = FontWeight.SemiBold)
-        TextField(
-            value = nome,
-            onValueChange = onNomeChange,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.background,
-                unfocusedContainerColor = MaterialTheme.colorScheme.background
-            )
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text("Descrição", fontFamily = InterFont, fontWeight = FontWeight.SemiBold)
-        TextField(
-            value = descricao,
-            onValueChange = onDescricaoChange,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.background,
-                unfocusedContainerColor = MaterialTheme.colorScheme.background
-            )
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
-        ) {
-            TextField(
-                value = tipo.name,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Tipo") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.background,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.background
-                )
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                TipoExercicio.values().forEach { tipoOption ->
-                    DropdownMenuItem(
-                        text = { Text(tipoOption.name) },
-                        onClick = {
-                            onTipoChange(tipoOption)
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-
-        if (tipo == TipoExercicio.MAQUINA) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("ID da Máquina", fontFamily = InterFont, fontWeight = FontWeight.SemiBold)
-            TextField(
-                value = maquinaId?.toString() ?: "",
-                onValueChange = { onMaquinaIdChange(it.toLongOrNull()) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.background,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row {
-            Button(onClick = onSave, modifier = Modifier.weight(1f)) {
-                Text("Salvar")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = onCancel, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)) {
-                Text("Cancelar")
-            }
-        }
-    }
-}
 
 @Composable
 fun ExercicioCard(exercicio: Exercicio, onEdit: (Exercicio) -> Unit, onDelete: (Exercicio) -> Unit) {
@@ -378,7 +262,7 @@ fun ExercicioCard(exercicio: Exercicio, onEdit: (Exercicio) -> Unit, onDelete: (
                         exercicio.nome,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontFamily = InterFont
                     )
 
@@ -469,9 +353,96 @@ fun ExercicioCard(exercicio: Exercicio, onEdit: (Exercicio) -> Unit, onDelete: (
                         exercicio.maquinaId.toString(),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontFamily = InterFont
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteConfirmationDialog(
+    exercicioNome: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(24.dp)
+        ) {
+            Column {
+                // Linha do Título e Botão de Fechar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Deletar exercício",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = InterFont,
+                        color = Color.Black
+                    )
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fechar",
+                            tint = Color.Black
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Texto descritivo
+                Text(
+                    text = "Gostaria de apagar o exercício $exercicioNome?",
+                    fontSize = 16.sp,
+                    fontFamily = InterFont,
+                    color = Color(0xFF8E8E8E) // Cinza do seu tema
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Linha dos Botões
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFBDBD), // Fundo vermelho claro
+                            contentColor = Color(0xFFD32F2F)    // Texto vermelho escuro
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                    ) {
+                        Text("Deletar", fontFamily = InterFont, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF5F5F5), // Fundo cinza claro
+                            contentColor = Color(0xFF8E8E8E)    // Texto cinza
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                    ) {
+                        Text("Cancelar", fontFamily = InterFont, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
             }
         }

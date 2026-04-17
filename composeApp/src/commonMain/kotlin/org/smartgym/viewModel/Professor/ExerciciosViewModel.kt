@@ -24,6 +24,10 @@ class ExerciciosViewModel(private val repository: ExercicioRepository) : ViewMod
     private val _tipo = MutableStateFlow(TipoExercicio.LIVRE)
     val tipo: StateFlow<TipoExercicio> = _tipo.asStateFlow()
 
+    // --- NOVO: Estado do Grupo Muscular ---
+    private val _grupoMuscular = MutableStateFlow("")
+    val grupoMuscular: StateFlow<String> = _grupoMuscular.asStateFlow()
+
     private val _maquinaId = MutableStateFlow<Long?>(null)
     val maquinaId: StateFlow<Long?> = _maquinaId.asStateFlow()
 
@@ -34,6 +38,9 @@ class ExerciciosViewModel(private val repository: ExercicioRepository) : ViewMod
     fun updateDescricao(value: String) { _descricao.value = value }
     fun updateTipo(value: TipoExercicio) { _tipo.value = value }
     fun updateMaquinaId(value: Long?) { _maquinaId.value = value }
+
+    // --- NOVO: Função para atualizar o Grupo Muscular ---
+    fun updateGrupoMuscular(value: String) { _grupoMuscular.value = value }
 
     fun loadAll() {
         viewModelScope.launch {
@@ -48,18 +55,27 @@ class ExerciciosViewModel(private val repository: ExercicioRepository) : ViewMod
 
     fun loadByNome(nome: String) {
         viewModelScope.launch {
-            _exercicios.value = repository.getByNome(nome)
+            try {
+                _exercicios.value = repository.getByNome(nome)
+            } catch (e: Exception) {
+                println("Erro ao buscar exercícios: ${e.message}")
+            }
         }
     }
 
     fun loadById(id: Long) {
         viewModelScope.launch {
-            repository.getById(id)?.let { exercicio ->
-                _editingId.value = id
-                _nome.value = exercicio.nome
-                _descricao.value = exercicio.descricao
-                _tipo.value = exercicio.tipo
-                _maquinaId.value = exercicio.maquinaId
+            try {
+                repository.getById(id)?.let { exercicio ->
+                    _editingId.value = id
+                    _nome.value = exercicio.nome
+                    _descricao.value = exercicio.descricao
+                    _tipo.value = exercicio.tipo
+                    _grupoMuscular.value = exercicio.grupoMuscular ?: "" // --- NOVO: Carrega o grupo muscular (se houver) ---
+                    _maquinaId.value = exercicio.maquinaId
+                }
+            } catch (e: Exception) {
+                println("Erro ao carregar exercício por ID: ${e.message}")
             }
         }
     }
@@ -74,53 +90,72 @@ class ExerciciosViewModel(private val repository: ExercicioRepository) : ViewMod
         }
     }
 
-    fun create() {
+    private fun create() { // Transformei em private pois a UI só deve chamar o "save"
         viewModelScope.launch {
-            val exercicio = Exercicio(
-                nome = _nome.value,
-                descricao = _descricao.value,
-                tipo = _tipo.value,
-                maquinaId = _maquinaId.value
-            )
-            repository.create(exercicio)
-            loadAll()
-            clearForm()
+            try {
+                val exercicio = Exercicio(
+                    nome = _nome.value,
+                    descricao = _descricao.value,
+                    tipo = _tipo.value,
+                    grupoMuscular = if (_grupoMuscular.value.isNotBlank()) _grupoMuscular.value else null, // --- NOVO: Salva o grupo muscular ---
+                    maquinaId = _maquinaId.value
+                )
+                repository.create(exercicio)
+                loadAll()
+                clearForm()
+            } catch (e: Exception) {
+                println("Erro ao criar exercício: ${e.message}")
+            }
         }
     }
 
-    fun update(id: Long) {
+    private fun update(id: Long) { // Transformei em private pois a UI só deve chamar o "save"
         viewModelScope.launch {
-            val exercicio = Exercicio(
-                id = id,
-                nome = _nome.value,
-                descricao = _descricao.value,
-                tipo = _tipo.value,
-                maquinaId = _maquinaId.value
-            )
-            repository.update(id, exercicio)
-            loadAll()
-            clearForm()
+            try {
+                val exercicio = Exercicio(
+                    id = id,
+                    nome = _nome.value,
+                    descricao = _descricao.value,
+                    tipo = _tipo.value,
+                    grupoMuscular = if (_grupoMuscular.value.isNotBlank()) _grupoMuscular.value else null, // --- NOVO: Atualiza o grupo muscular ---
+                    maquinaId = _maquinaId.value
+                )
+                repository.update(id, exercicio)
+                loadAll()
+                clearForm()
+            } catch (e: Exception) {
+                println("Erro ao atualizar exercício: ${e.message}")
+            }
         }
     }
 
     fun delete(id: Long) {
         viewModelScope.launch {
-            repository.delete(id)
-            loadAll()
+            try {
+                repository.delete(id)
+                loadAll()
+            } catch (e: Exception) {
+                println("Erro ao deletar exercício: ${e.message}")
+            }
         }
     }
 
     fun loadByMaquina(maquinaId: Long) {
         viewModelScope.launch {
-            _exercicios.value = repository.getByMaquina(maquinaId)
+            try {
+                _exercicios.value = repository.getByMaquina(maquinaId)
+            } catch (e: Exception) {
+                println("Erro ao carregar exercícios por máquina: ${e.message}")
+            }
         }
     }
 
-     fun clearForm() {
+    fun clearForm() {
         _editingId.value = null
         _nome.value = ""
         _descricao.value = ""
         _tipo.value = TipoExercicio.LIVRE
+        _grupoMuscular.value = "" // --- NOVO: Limpa o campo do Grupo Muscular ---
         _maquinaId.value = null
     }
 }

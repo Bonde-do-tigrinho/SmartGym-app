@@ -47,6 +47,7 @@ import org.smartgym.Screens.Aluno.PagamentosScreen
 import org.smartgym.Screens.Aluno.PerfilAlunoScreen
 import org.smartgym.Screens.Aluno.TreinoScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
+import org.smartgym.Screens.Professor.CriarExercicioScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
 import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Professor.HomeProfessorScreen
@@ -161,7 +162,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 navController = navController,
                 userRole = userRole,
                 onLogout = onLogout,
-                modifier = Modifier.padding(16.dp)
             )
         }
 
@@ -306,6 +306,12 @@ fun NavContent(
         // --- MUDANÇA AQUI: Passando o viewModel para a ExerciciosScreen ---
         composable(Screen.Exercicios.route) {
             ExerciciosScreen(
+                navController = navController,
+                viewModel = exerciciosViewModel
+            )
+        }
+        composable(Screen.NovoExercicio.route) {
+            CriarExercicioScreen(
                 navController = navController,
                 viewModel = exerciciosViewModel
             )
