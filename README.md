@@ -1,63 +1,80 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Web.
+<h1 align="center">
+  🏋️‍♂️ SmartGym
+</h1>
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+<p align="center">
+  <b>Sistema Inteligente de Gestão e Monitoramento de Treinos</b>
+</p>
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
-
-### Build and Run Android Application
-
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
-
-### Build and Run Web Application
-
-To build and run the development version of the web app, use the run configuration from the run widget
-in your IDE's toolbar or run it directly from the terminal:
-- for the Wasm target (faster, modern browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-- for the JS target (slower, supports older browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:jsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
-    ```
-
-### Build and Run iOS Application
-
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+<p align="center">
+  <img src="https://img.shields.io/badge/Kotlin-B125EA?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
+  <img src="https://img.shields.io/badge/Compose_Multiplatform-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Compose Multiplatform" />
+  <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
+  <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
+</p>
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
+## 📝 Sobre o Projeto
 
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-If you face any issues, please report them on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+O **SmartGym** é uma solução multiplataforma robusta desenvolvida para modernizar a gestão de academias. Através de uma arquitetura unificada, o sistema oferece interfaces específicas para alunos, professores e administradores, garantindo agilidade no acompanhamento de treinos e na administração de unidades.
+
+Este software foi desenvolvido como **Trabalho de Conclusão de Curso (TCC)**, utilizando o ecossistema **Kotlin Multiplatform (KMP)**. O diferencial do projeto é o compartilhamento de lógica de negócio e interface entre diferentes sistemas operacionais, permitindo que o aplicativo rode nativamente tanto em dispositivos móveis (**Android**) quanto em computadores (**Windows Desktop**) com alta performance e fidelidade visual.
+
+### ✨ Principais Funcionalidades
+- **🏋️ Gestão de Treinos:** Fichas digitais dinâmicas com foco em hipertrofia.
+- **⚡ Monitoramento em Tempo Real:** Visualização de ocupação de aparelhos.
+- **📊 Painel Administrativo:** Controle de unidades, alunos e métricas financeiras.
+- **🎨 Interface Adaptável:** Design moderno com suporte nativo a Temas Claros e Escuros.
+
+---
+
+## 👥 Integrantes (Grupo SmartGym)
+
+O projeto foi idealizado e desenvolvido com dedicação pela equipe:
+
+| Desenvolvedor | Perfil no GitHub |
+| :--- | :--- |
+| **Raul** | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/R4ULz) |
+| **Leandro** | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/LeandroRodrigues061) |
+| **Gabriel** | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/Kendi9866) |
+| **Nicolas** | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/Nick-Yanase) |
+| **Miguel** | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/Bzats) |
+| **Joao** | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/MaximianoJ) |
+
+---
+
+## 🛠 Tecnologias Utilizadas
+
+* **Linguagem:** Kotlin
+* **UI Framework:** Compose Multiplatform
+* **Navegação:** JetBrains Navigation (Multiplatform)
+---
+
+## 🚀 Instalação e Execução
+
+### Pré-requisitos
+Para compilar e rodar o projeto, você precisará de:
+* **JDK 17** ou superior.
+* **Android Studio** (Hedgehog ou superior) ou **IntelliJ IDEA / Fleet**.
+* Android SDK configurado (para a versão mobile).
+
+### Passo a Passo
+
+**1. Clonar o Repositório:**
+```bash
+git clone [https://github.com/seu-usuario/SmartGym-App.git](https://github.com/seu-usuario/SmartGym-App.git)
+cd SmartGym-App
+```
+
+**2. Executar no Windows (Desktop):**
+```bash
+./gradlew :composeApp:run
+```
+
+**3. Executar no Android (Mobile):**
+```bash
+./gradlew :composeApp:installDebug
+```
+
+**Após o comando terminar com sucesso (BUILD SUCCESSFUL), abra os aplicativos do celular/emulador e clique no ícone do SmartGym para iniciar.**
