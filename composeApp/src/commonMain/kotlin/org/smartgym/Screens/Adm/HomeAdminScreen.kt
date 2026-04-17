@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import org.smartgym.viewModel.Adm.HomeAdminViewModel
+import androidx.compose.runtime.remember
+
 
 @Composable
 fun KpiCard(
@@ -85,8 +87,9 @@ fun GradientCard(
 fun HomeAdminScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: HomeAdminViewModel = viewModel()
+    viewModel: HomeAdminViewModel = remember { HomeAdminViewModel() }
 ) {
+
     val kpiItems by viewModel.kpiItems.collectAsState()
     val chartData by viewModel.chartData.collectAsState()
     val gradientItems by viewModel.gradientItems.collectAsState()
