@@ -1,7 +1,10 @@
 package org.smartgym.model.Adm
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Unidade(
-    val id: String,
+    val id: Int? = null,
     val nome: String,
     val endereco: String,
     val cidade: String,

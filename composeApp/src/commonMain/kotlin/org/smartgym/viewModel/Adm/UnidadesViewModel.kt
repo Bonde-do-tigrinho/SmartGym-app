@@ -1,93 +1,87 @@
 package org.smartgym.viewModel.Adm
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.smartgym.model.Adm.Unidade
-import kotlin.random.Random
+import org.smartgym.repository.ApiUnidadeRepository
 
 class UnidadesViewModel : ViewModel() {
 
-    // Variável de estado para guardar a lista
+    private val repository = ApiUnidadeRepository()
+
     private val _listaUnidades = MutableStateFlow<List<Unidade>>(emptyList())
     val listaUnidades: StateFlow<List<Unidade>> = _listaUnidades.asStateFlow()
 
-    // Variáveis de estado para CADA campo do formulário
-    val idAtual = MutableStateFlow("")
+    val idAtual = MutableStateFlow<Int?>(null) // Mudamos para Int?
     val nomeAtual = MutableStateFlow("")
     val enderecoAtual = MutableStateFlow("")
     val cidadeAtual = MutableStateFlow("")
 
-    // Variável para controlar se a tela está mostrando a Lista ou o Formulário
     val mostrandoFormulario = MutableStateFlow(false)
 
     init {
-        carregar() // Simula o carregamento inicial da API
+        carregar()
     }
 
-    // Carregar: Simulação do READ
+    // Busca da API real
     fun carregar() {
-        if (_listaUnidades.value.isEmpty()) {
-            _listaUnidades.value = listOf(
-                Unidade("1", "Unidade Centro", "Rua Principal, 123", "São Paulo - SP", 320, 12),
-                Unidade("2", "Unidade Zona Sul", "Av. Paulista, 456", "São Paulo - SP", 189, 8)
-            )
+        viewModelScope.launch {
+            try {
+                _listaUnidades.value = repository.buscarTodas()
+            } catch (e: Exception) {
+                println("Erro ao carregar unidades: ${e.message}")
+            }
         }
     }
 
-    // Funcionalidade: Limpar Campos
     fun limparCampos() {
-        idAtual.value = ""
+        idAtual.value = null
         nomeAtual.value = ""
         enderecoAtual.value = ""
         cidadeAtual.value = ""
     }
 
-    // Funcionalidade: Gravar (CREATE / UPDATE)
+    // Salva na API real
     fun gravar() {
-        val listaAtualizada = _listaUnidades.value.toMutableList()
-
-        if (idAtual.value.isEmpty()) {
-            // É um registro novo (POST)
-            val novaUnidade = Unidade(
-                id = "id_${Random.nextInt(1000, 99999)}", // Usa o gerador aleatório nativo do Kotlin
-                nome = nomeAtual.value,
-                endereco = enderecoAtual.value,
-                cidade = cidadeAtual.value
-            )
-            listaAtualizada.add(novaUnidade)
-        } else {
-            // É uma edição (PUT)
-            val index = listaAtualizada.indexOfFirst { it.id == idAtual.value }
-            if (index != -1) {
-                listaAtualizada[index] = listaAtualizada[index].copy(
+        viewModelScope.launch {
+            try {
+                val unidade = Unidade(
+                    id = idAtual.value,
                     nome = nomeAtual.value,
                     endereco = enderecoAtual.value,
                     cidade = cidadeAtual.value
                 )
+                repository.salvar(unidade)
+                limparCampos()
+                mostrandoFormulario.value = false
+                carregar() // Atualiza a tela puxando do banco novamente
+            } catch (e: Exception) {
+                println("Erro ao gravar unidade: ${e.message}")
             }
         }
-
-        _listaUnidades.value = listaAtualizada
-        limparCampos()
-        mostrandoFormulario.value = false
-        carregar() // Simula trazer os dados novamente atualizando a lista
     }
 
-    // Funcionalidade: Preparar Edição
     fun prepararEdicao(unidade: Unidade) {
         idAtual.value = unidade.id
         nomeAtual.value = unidade.nome
         enderecoAtual.value = unidade.endereco
         cidadeAtual.value = unidade.cidade
-        mostrandoFormulario.value = true // Abre o formulário
+        mostrandoFormulario.value = true
     }
 
-    // Funcionalidade: Apagar (DELETE)
-    fun apagar(idParaApagar: String) {
-        val listaAtualizada = _listaUnidades.value.filter { it.id != idParaApagar }
-        _listaUnidades.value = listaAtualizada
-        carregar() // Simula atualizar os elementos
+    // Apaga na API real
+    fun apagar(idParaApagar: Int) {
+        viewModelScope.launch {
+            try {
+                repository.apagar(idParaApagar)
+                carregar() // Atualiza a tela
+            } catch (e: Exception) {
+                println("Erro ao apagar unidade: ${e.message}")
+            }
+        }
     }
 }

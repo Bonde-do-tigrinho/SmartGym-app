@@ -44,7 +44,7 @@ fun UnidadesScreen(
 fun ListagemUnidades(viewModel: UnidadesViewModel, modifier: Modifier) {
     val listaDeUnidades by viewModel.listaUnidades.collectAsState()
 
-    var unidadeIdParaApagar by remember { mutableStateOf<String?>(null) }
+    var unidadeIdParaApagar by remember { mutableStateOf<Int?>(null) }
 
     Column(
         modifier = modifier
