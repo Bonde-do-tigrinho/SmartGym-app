@@ -10,7 +10,7 @@ object ApiClient {
     // Android Emulador → 10.0.2.2
     // Web/Desktop → localhost:8080
     //android fisico -> http://192.168.x.x:8080
-    private const val BASE_URL = "http://localhost:8080"
+    private const val BASE_URL = "http://192.168.15.141:8080"
 
     val client = HttpClient {
         install(ContentNegotiation) {
