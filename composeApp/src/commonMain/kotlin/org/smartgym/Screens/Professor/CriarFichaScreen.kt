@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +26,9 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -37,6 +39,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,14 +50,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.Font
 import org.smartgym.theme.SmartGymGreen
+import org.smartgym.util.dateToEpochMillis
+import org.smartgym.util.epochMillisToDateParts
+import org.smartgym.util.formatDateDdMmYyyy
+import org.smartgym.util.maskDateInput
+import org.smartgym.util.parseDateDdMmYyyy
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
@@ -83,6 +93,19 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
 
     var alunoExpanded by remember { mutableStateOf(false) }
     var exercicioExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var vigenciaInput by remember {
+        mutableStateOf(TextFieldValue(text = vigencia, selection = TextRange(vigencia.length)))
+    }
+
+    LaunchedEffect(vigencia) {
+        if (vigenciaInput.text != vigencia) {
+            vigenciaInput = TextFieldValue(
+                text = vigencia,
+                selection = TextRange(vigencia.length)
+            )
+        }
+    }
 
     val exerciciosSelecionados = selectedExercicios.mapNotNull { selecionado ->
         exercicios.firstOrNull { it.id == selecionado.exercicioId }?.let { exercicio ->
@@ -101,6 +124,10 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
         viewModel.navigationEvent.collectLatest {
             navController.popBackStack()
         }
+    }
+
+    val initialDateMillis = remember(vigencia) {
+        parseDateDdMmYyyy(vigencia)?.let(::dateToEpochMillis)
     }
 
     Box(
@@ -197,10 +224,21 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
 
                 FormLabelFicha("Vigência")
                 TextField(
-                    value = vigencia,
-                    onValueChange = viewModel::updateVigencia,
-                    placeholder = { Text("06/06/2026", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
-                    leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = Color(0xFF9CA3AF)) },
+                    value = vigenciaInput,
+                    onValueChange = { newValue ->
+                        val masked = maskDateInput(newValue.text)
+                        viewModel.updateVigencia(masked)
+                        vigenciaInput = TextFieldValue(
+                            text = masked,
+                            selection = TextRange(masked.length)
+                        )
+                    },
+                    placeholder = { Text("Ex: 06/06/2026", fontFamily = InterFont, color = Color(0xFF9CA3AF)) },
+                    leadingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Outlined.CalendarMonth, contentDescription = "Selecionar data", tint = Color(0xFF9CA3AF))
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
@@ -345,6 +383,46 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+
+        if (showDatePicker) {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = initialDateMillis,
+                initialDisplayMode = DisplayMode.Picker
+            )
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val selected = epochMillisToDateParts(millis)
+                                val formatted = formatDateDdMmYyyy(selected)
+                                viewModel.updateVigencia(formatted)
+                                vigenciaInput = TextFieldValue(
+                                    text = formatted,
+                                    selection = TextRange(formatted.length)
+                                )
+                            }
+                            showDatePicker = false
+                        }
+                    ) {
+                        Text("OK", fontFamily = InterFont)
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { showDatePicker = false }) {
+                        Text("Cancelar", fontFamily = InterFont)
+                    }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    title = null,
+                    headline = null,
+                    showModeToggle = false
+                )
+            }
+        }
     }
 }
 
@@ -369,9 +447,6 @@ private fun fieldColorsFicha() = TextFieldDefaults.colors(
     focusedTextColor = Color(0xFF4B5563),
     unfocusedTextColor = Color(0xFF4B5563)
 )
-
-
-
 
 
 

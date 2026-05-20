@@ -24,6 +24,9 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DisplayMode
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -35,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,14 +48,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.Font
 import org.smartgym.theme.SmartGymGreen
+import org.smartgym.util.dateToEpochMillis
+import org.smartgym.util.epochMillisToDateParts
+import org.smartgym.util.formatDateDdMmYyyy
+import org.smartgym.util.maskDateInput
+import org.smartgym.util.parseDateDdMmYyyy
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
@@ -78,6 +89,10 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
     val editingId by viewModel.editingId.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     var alunoDropdownExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var dataAvaliacaoInput by remember {
+        mutableStateOf(TextFieldValue(text = dataAvaliacao, selection = TextRange(dataAvaliacao.length)))
+    }
     val colorScheme = MaterialTheme.colorScheme
 
     val isEditing = editingId != null
@@ -89,12 +104,25 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
         }
     }
 
+    LaunchedEffect(dataAvaliacao) {
+        if (dataAvaliacaoInput.text != dataAvaliacao) {
+            dataAvaliacaoInput = TextFieldValue(
+                text = dataAvaliacao,
+                selection = TextRange(dataAvaliacao.length)
+            )
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colorScheme.background)
             .statusBarsPadding()
     ) {
+        val initialDateMillis = remember(dataAvaliacao) {
+            parseDateDdMmYyyy(dataAvaliacao)?.let(::dateToEpochMillis)
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -152,7 +180,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                     onExpandedChange = { alunoDropdownExpanded = !alunoDropdownExpanded }
                 ) {
                     TextField(
-                        value = if (selectedAlunoId != null && nomeAluno.isNotBlank()) "$nomeAluno (ID: $selectedAlunoId)" else "",
+                        value = if (selectedAlunoId != null && nomeAluno.isNotBlank()) nomeAluno else "",
                         onValueChange = {},
                         readOnly = true,
                         placeholder = {
@@ -189,7 +217,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "${aluno.nome} (ID: ${aluno.id})",
+                                        aluno.nome,
                                         fontFamily = InterFont,
                                         color = colorScheme.onSurface
                                     )
@@ -205,13 +233,22 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
 
                 FormLabelAvaliacao("Data da avaliacao")
                 TextField(
-                    value = dataAvaliacao,
-                    onValueChange = viewModel::updateDataAvaliacao,
+                    value = dataAvaliacaoInput,
+                    onValueChange = { newValue ->
+                        val masked = maskDateInput(newValue.text)
+                        viewModel.updateDataAvaliacao(masked)
+                        dataAvaliacaoInput = TextFieldValue(
+                            text = masked,
+                            selection = TextRange(masked.length)
+                        )
+                    },
                     placeholder = {
-                        Text("Ex: 2026-04-16", fontFamily = InterFont, color = colorScheme.onSurfaceVariant)
+                        Text("Ex: 16/04/2026", fontFamily = InterFont, color = colorScheme.onSurfaceVariant)
                     },
                     leadingIcon = {
-                        Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = colorScheme.onSurfaceVariant)
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Outlined.CalendarMonth, contentDescription = "Selecionar data", tint = colorScheme.onSurfaceVariant)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -328,6 +365,41 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        if (showDatePicker) {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = initialDateMillis,
+                initialDisplayMode = DisplayMode.Picker
+            )
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val selected = epochMillisToDateParts(millis)
+                                viewModel.updateDataAvaliacao(formatDateDdMmYyyy(selected))
+                            }
+                            showDatePicker = false
+                        }
+                    ) {
+                        Text("OK", fontFamily = InterFont)
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { showDatePicker = false }) {
+                        Text("Cancelar", fontFamily = InterFont)
+                    }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    title = null,
+                    headline = null,
+                    showModeToggle = false
+                )
             }
         }
     }

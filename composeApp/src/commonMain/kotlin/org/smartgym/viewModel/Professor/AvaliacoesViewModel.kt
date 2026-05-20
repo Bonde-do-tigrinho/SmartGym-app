@@ -13,6 +13,9 @@ import org.smartgym.model.professor.AlunoResumido
 import org.smartgym.model.professor.Avaliacao
 import org.smartgym.repository.AlunoRepository
 import org.smartgym.repository.AvaliacaoRepository
+import org.smartgym.util.formatDateToUi
+import org.smartgym.util.isValidUiDate
+import org.smartgym.util.maskDateInput
 
 class AvaliacoesViewModel(
     private val repository: AvaliacaoRepository,
@@ -67,7 +70,7 @@ class AvaliacoesViewModel(
         _selectedAlunoId.value = value
         _nomeAluno.value = _alunosResumo.value.firstOrNull { it.id == value }?.nome.orEmpty()
     }
-    fun updateDataAvaliacao(value: String) { _dataAvaliacao.value = value }
+    fun updateDataAvaliacao(value: String) { _dataAvaliacao.value = maskDateInput(value) }
     fun updatePeso(value: String) { _peso.value = value }
     fun updatePercentualGordura(value: String) { _percentualGordura.value = value }
     fun updateImc(value: String) { _imc.value = value }
@@ -108,7 +111,7 @@ class AvaliacoesViewModel(
                     _editingId.value = id
                     _selectedAlunoId.value = avaliacao.alunoId.takeIf { it > 0 }
                     _nomeAluno.value = avaliacao.nomeAluno
-                    _dataAvaliacao.value = avaliacao.dataAvaliacao
+                    _dataAvaliacao.value = formatDateToUi(avaliacao.dataAvaliacao)
                     _peso.value = avaliacao.peso.toString()
                     _percentualGordura.value = avaliacao.percentualGordura.toString()
                     _imc.value = avaliacao.imc.toString()
@@ -197,7 +200,7 @@ class AvaliacoesViewModel(
     private fun formularioValido(): Boolean {
         return (_selectedAlunoId.value ?: 0) > 0 &&
             _nomeAluno.value.isNotBlank() &&
-            _dataAvaliacao.value.isNotBlank() &&
+            isValidUiDate(_dataAvaliacao.value) &&
             _peso.value.isNotBlank() && _peso.value.replace(",", ".").toDoubleOrNull() != null &&
             _percentualGordura.value.isNotBlank() && _percentualGordura.value.replace(",", ".").toDoubleOrNull() != null &&
             _imc.value.isNotBlank() && _imc.value.replace(",", ".").toDoubleOrNull() != null &&

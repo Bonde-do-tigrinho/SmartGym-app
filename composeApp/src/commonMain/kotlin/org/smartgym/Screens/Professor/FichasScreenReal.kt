@@ -45,6 +45,7 @@ import org.jetbrains.compose.resources.Font
 import org.smartgym.Screen
 import org.smartgym.model.professor.FichaTreino
 import org.smartgym.theme.SmartGymGreen
+import org.smartgym.util.formatDateToUi
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
 import org.smartgym.viewModel.Professor.FichasViewModel
 import smartgym.composeapp.generated.resources.Res
@@ -219,13 +220,6 @@ fun FichaItemReal(
                 color = MaterialTheme.colorScheme.onBackground,
                 fontFamily = InterFont
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "ID do aluno: ${ficha.alunoId}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = InterFont
-            )
             Spacer(modifier = Modifier.height(10.dp))
             Box(
                 modifier = Modifier
@@ -249,8 +243,8 @@ fun FichaItemReal(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                InfoRowReal(label = "Criado em:", value = ficha.dataCriacao.ifBlank { "-" })
-                InfoRowReal(label = "Valido ate:", value = ficha.vigencia)
+                InfoRowReal(label = "Criado em:", value = formatDateToUi(ficha.dataCriacao).ifBlank { "-" })
+                InfoRowReal(label = "Valido ate:", value = formatDateToUi(ficha.vigencia).ifBlank { "-" })
                 InfoRowReal(label = "Exercicios:", value = ficha.exercicios.size.toString())
             }
             Spacer(modifier = Modifier.height(14.dp))

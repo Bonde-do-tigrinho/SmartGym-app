@@ -51,6 +51,7 @@ import org.jetbrains.compose.resources.Font
 import org.smartgym.Screen
 import org.smartgym.model.professor.Avaliacao
 import org.smartgym.theme.SmartGymGreen
+import org.smartgym.util.formatDateToUi
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
@@ -126,7 +127,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            "+ Nova avaliaçõo",
+                            "+ Nova avaliação",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.Black,
@@ -238,7 +239,7 @@ fun AvaliacaoCard(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        avaliacao.dataAvaliacao,
+                        formatDateToUi(avaliacao.dataAvaliacao),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = InterFont
