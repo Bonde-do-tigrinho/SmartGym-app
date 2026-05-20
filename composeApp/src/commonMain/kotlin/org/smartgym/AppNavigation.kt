@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.SupervisorAccount
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Home
@@ -40,6 +41,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.savedstate.SavedState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
@@ -68,10 +70,14 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.smartgym.Screens.Adm.EditarProfessorScreen
 import org.smartgym.Screens.Adm.MaquinasAdminScreen
+import org.smartgym.Screens.Adm.NovoProfessorScreen
+import org.smartgym.Screens.Adm.ProfessoresAdminScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
+import org.smartgym.viewModel.Adm.ProfessoresViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -315,9 +321,10 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             val adminItems = listOf(
                 Screen.HomeAdmin.route,
                 Screen.AlunosAdmin.route,
+                Screen.ProfessoresAdmin.route,
                 Screen.UnidadesAdmin.route,
                 "telaPlanos",
-                Screen.MaquinasAdmin.route
+                Screen.MaquinasAdmin.route,
             )
 
             val adminLabels = mapOf(
@@ -325,7 +332,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
                 "telaPlanos" to "Planos",
-                Screen.MaquinasAdmin.route to "Máquinas"
+                Screen.MaquinasAdmin.route to "Máquinas",
+                Screen.ProfessoresAdmin.route to "Professores",
             )
 
             val adminIcons = mapOf(
@@ -333,7 +341,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
                 "telaPlanos" to Icons.Rounded.Assignment,
-                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter
+                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
+                Screen.ProfessoresAdmin.route to Icons.Outlined.SupervisorAccount,
             )
 
             ModalNavigationDrawer(
@@ -446,6 +455,7 @@ fun NavContent(
     val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
     val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
     val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
+    val professoresViewModel = remember { ProfessoresViewModel() }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
@@ -532,13 +542,54 @@ fun NavContent(
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
 
         composable(
-            route = Screen.EditarAluno.route + "/{alunoId}"
+            route = "${Screen.EditarAluno.route}/{alunoId}"
         ) { backStackEntry ->
+
             val alunoId = backStackEntry.destination.route
-                ?.substringAfterLast("/")
+                ?.split("/")
+                ?.lastOrNull()
                 ?.toIntOrNull()
-                ?: return@composable
-            EditarAlunoScreen(alunoId = alunoId, navController = navController, viewModel = alunosViewModel)
+
+            if (alunoId != null) {
+                EditarAlunoScreen(
+                    alunoId = alunoId,
+                    navController = navController,
+                    viewModel = alunosViewModel
+                )
+            } else {
+                println("ERRO: ID do aluno não encontrado")
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
+        }
+
+        composable(Screen.ProfessoresAdmin.route) {
+            ProfessoresAdminScreen(navController, viewModel = professoresViewModel)
+        }
+
+        composable(Screen.NovoProfessor.route) {
+            NovoProfessorScreen(navController, viewModel = professoresViewModel)
+        }
+
+        composable(
+            route = "${Screen.EditarAluno.route}/{professorId}"
+        ) { backStackEntry ->
+
+            val professorId = backStackEntry.destination.route
+                ?.split("/")
+                ?.lastOrNull()
+                ?.toIntOrNull()
+
+            if (professorId != null) {
+                EditarAlunoScreen(
+                    alunoId = professorId,
+                    navController = navController,
+                    viewModel = alunosViewModel
+                )
+            } else {
+                println("ERRO: ID do professor não encontrado")
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
         }
     }
 }
+

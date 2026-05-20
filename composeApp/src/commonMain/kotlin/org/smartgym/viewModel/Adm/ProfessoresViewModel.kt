@@ -23,11 +23,12 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-class AlunosViewModel : ViewModel() {
+class ProfessoresViewModel : ViewModel() {
 
     private val client = ApiClient.client
-    private val _alunos = MutableStateFlow<List<Usuario>>(emptyList())
-    val alunos: StateFlow<List<Usuario>> = _alunos.asStateFlow()
+
+    private val _professores = MutableStateFlow<List<Usuario>>(emptyList())
+    val professores: StateFlow<List<Usuario>> = _professores.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -38,10 +39,10 @@ class AlunosViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    val alunosFiltrados: StateFlow<List<Usuario>> = combine(_alunos, _searchQuery) { lista, query ->
+    val professoresFiltrados: StateFlow<List<Usuario>> = combine(_professores, _searchQuery) { lista, query ->
         if (query.isBlank()) lista
         else lista.filter { it.nome.contains(query, ignoreCase = true) }
-    }.stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), _alunos.value)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _professores.value)
 
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
@@ -49,110 +50,109 @@ class AlunosViewModel : ViewModel() {
     private val _navigationEvent = MutableSharedFlow<Unit>()
     val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
-    init{
-        carregarAlunos()
+    init {
+        carregarProfessores()
     }
+
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
 
-    fun carregarAlunos() {
+    fun carregarProfessores() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val url = ApiClient.getUrl("/api/alunos")
-                println("CHAMANDO API: $url")
-
                 val result: List<Usuario> = client
-                    .get(url)
+                    .get(ApiClient.getUrl("/api/professores"))
                     .body()
-
-                println("ALUNOS RECEBIDOS: $result")
-                _alunos.value = result
-
+                _professores.value = result
             } catch (e: Exception) {
-                println("ERRO AO CARREGAR ALUNOS: ${e.message}")
-                e.printStackTrace()
-                _errorMessage.value = "Erro ao carregar alunos: ${e.message}"
+                println("ERRO AO CARREGAR PROFESSORES: ${e.message}")
+                _errorMessage.value = "Erro ao carregar professores: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun adicionarAluno(
+    fun adicionarProfessor(
         nome: String,
         email: String,
         telefone: String,
-        cpf: String,
-        plano: String,
-        status: Boolean
+        cpf: String
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val novoUsuario = Usuario(
+                val novoProfessor = Usuario(
                     id = null,
                     nome = nome,
                     email = email,
                     telefone = telefone,
                     cpf = cpf,
-                    plano = plano,
-                    status = status,
+                    status = true,
+                    role = "PROFESSOR",
+                    plano = null,
                     treinoAtual = null,
                     focoTreino = null,
                     planoVencimento = null,
                     planoValor = null
                 )
 
-                client.post(ApiClient.getUrl("/api/alunos")) {
+                val url = ApiClient.getUrl("/api/professores")
+                println("ENVIANDO PARA: $url")
+                println("DADOS: $novoProfessor")
+
+                val response = client.post(url) {
                     contentType(ContentType.Application.Json)
-                    setBody(novoUsuario)
+                    setBody(novoProfessor)
                 }
 
-                carregarAlunos()
-                _snackbarEvent.emit("Usuario cadastrado com sucesso!")
+                println("STATUS RESPONSE: ${response.status}")
+
+                carregarProfessores()
+                _snackbarEvent.emit("Professor cadastrado com sucesso!")
                 _navigationEvent.emit(Unit)
 
             } catch (e: Exception) {
-                _errorMessage.value = "Erro ao adicionar aluno: ${e.message}"
+                e.printStackTrace()
+                _errorMessage.value = "Erro ao adicionar professor: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun deletarAluno(id: Int) {
+    fun deletarProfessor(id: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                client.delete(ApiClient.getUrl("/api/alunos/$id"))
-                carregarAlunos()
-                _snackbarEvent.emit("Usuario deletado com sucesso!")
-
+                client.delete(ApiClient.getUrl("/api/professores/$id"))
+                carregarProfessores()
+                _snackbarEvent.emit("Professor deletado com sucesso!")
             } catch (e: Exception) {
-                _errorMessage.value = "Erro ao deletar aluno: ${e.message}"
+                _errorMessage.value = "Erro ao deletar professor: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun editarAluno(usuario: Usuario) {
+    fun editarProfessor(usuario: Usuario) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                client.put(ApiClient.getUrl("/api/alunos/${usuario.id}")) {
+                client.put(ApiClient.getUrl("/api/professores/${usuario.id}")) {
                     contentType(ContentType.Application.Json)
                     setBody(usuario)
                 }
 
-                carregarAlunos()
-                _snackbarEvent.emit("Usuario atualizado com sucesso!")
+                carregarProfessores()
+                _snackbarEvent.emit("Professor atualizado com sucesso!")
                 _navigationEvent.emit(Unit)
 
             } catch (e: Exception) {
-                _errorMessage.value = "Erro ao editar usuario: ${e.message}"
+                _errorMessage.value = "Erro ao editar professor: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -161,12 +161,5 @@ class AlunosViewModel : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = null
-    }
-
-    private val _successMessage = MutableStateFlow<String?>(null)
-    val successMessage: StateFlow<String?> = _successMessage
-
-    fun clearSuccess() {
-        _successMessage.value = null
     }
 }

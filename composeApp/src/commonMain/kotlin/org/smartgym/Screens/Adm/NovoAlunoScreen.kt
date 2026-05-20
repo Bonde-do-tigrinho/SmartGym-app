@@ -53,7 +53,7 @@ fun NovoAlunoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Novo Aluno", fontWeight = FontWeight.Bold) },
+                title = { Text("Novo Usuario", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -152,9 +152,9 @@ fun NovoAlunoScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Aluno Ativo", fontWeight = FontWeight.SemiBold)
+                        Text("Usuario Ativo", fontWeight = FontWeight.SemiBold)
                         Text(
-                            if (status) "Aluno terá acesso à academia" else "Aluno sem acesso à academia",
+                            if (status) "Usuario terá acesso à academia" else "Usuario sem acesso à academia",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -195,7 +195,7 @@ fun NovoAlunoScreen(
                 shape = RoundedCornerShape(12.dp),
                 enabled = nome.isNotBlank() && email.isNotBlank() && planoSelecionado.isNotBlank()
             ) {
-                Text("Salvar Aluno", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text("Salvar Usuario", color = Color.Black, fontWeight = FontWeight.Bold)
             }
 
             OutlinedButton(

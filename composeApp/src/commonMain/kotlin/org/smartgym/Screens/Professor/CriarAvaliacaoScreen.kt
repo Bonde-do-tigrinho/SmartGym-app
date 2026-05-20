@@ -132,7 +132,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                FormLabelAvaliacao("Aluno")
+                FormLabelAvaliacao("Usuario")
                 ExposedDropdownMenuBox(
                     expanded = alunoDropdownExpanded,
                     onExpandedChange = { alunoDropdownExpanded = !alunoDropdownExpanded }

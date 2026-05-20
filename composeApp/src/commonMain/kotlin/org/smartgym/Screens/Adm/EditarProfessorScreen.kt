@@ -3,7 +3,6 @@ package org.smartgym.Screens.Adm
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,20 +15,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
-import org.smartgym.viewModel.Adm.AlunosViewModel
+import org.smartgym.viewModel.Adm.ProfessoresViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditarAlunoScreen(
+fun EditarProfessorScreen(
     navController: NavController,
-    alunoId: Int,
+    professorId: Int,
     modifier: Modifier = Modifier,
-    viewModel: AlunosViewModel // ✅ sem = viewModel()
+    viewModel: ProfessoresViewModel
 ) {
-    val alunos by viewModel.alunos.collectAsState()
-    val aluno = alunos.find { it.id == alunoId }
+    val professores by viewModel.professores.collectAsState()
+    val professor = professores.find { it.id == professorId }
 
-    if (aluno == null) {
+    if (professor == null) {
         LaunchedEffect(Unit) { navController.popBackStack() }
         return
     }
@@ -38,17 +37,10 @@ fun EditarAlunoScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    var nome by remember { mutableStateOf(aluno.nome) }
-    var email by remember { mutableStateOf(aluno.email) }
-
-    var cpfRaw by remember { mutableStateOf(aluno.cpf.filter { it.isDigit() }) }
-    var telefoneRaw by remember { mutableStateOf(aluno.telefone.filter { it.isDigit() }) }
-
-    var planoSelecionado by remember { mutableStateOf(aluno.plano) }
-    var ativo by remember { mutableStateOf(aluno.status) }
-    var dropdownExpanded by remember { mutableStateOf(false) }
-
-    val planos = listOf("Basic", "Premium", "Black")
+    var nome by remember { mutableStateOf(professor.nome) }
+    var email by remember { mutableStateOf(professor.email) }
+    var cpfRaw by remember { mutableStateOf(professor.cpf.filter { it.isDigit() }) }
+    var telefoneRaw by remember { mutableStateOf(professor.telefone.filter { it.isDigit() }) }
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collectLatest {
@@ -59,7 +51,7 @@ fun EditarAlunoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Editar Usuario", fontWeight = FontWeight.Bold) },
+                title = { Text("Editar Professor", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -117,69 +109,6 @@ fun EditarAlunoScreen(
                 visualTransformation = TelefoneVisualTransformation()
             )
 
-            SectionTitle("Plano")
-
-            ExposedDropdownMenuBox(
-                expanded = dropdownExpanded,
-                onExpandedChange = { dropdownExpanded = it }
-            ) {
-                planoSelecionado?.let {
-                    OutlinedTextField(
-                        value = it,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Selecione o plano") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-                ExposedDropdownMenu(
-                    expanded = dropdownExpanded,
-                    onDismissRequest = { dropdownExpanded = false }
-                ) {
-                    planos.forEach { plano ->
-                        DropdownMenuItem(
-                            text = { Text(plano) },
-                            onClick = {
-                                planoSelecionado = plano
-                                dropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            SectionTitle("Status")
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("Usuario Ativo", fontWeight = FontWeight.SemiBold)
-                        Text(
-                            if (ativo) "Usuario terá acesso à academia" else "Usuario sem acesso à academia",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = ativo,
-                        onCheckedChange = { ativo = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.Black,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-            }
-
             Spacer(Modifier.height(8.dp))
 
             if (isLoading) CircularProgressIndicator()
@@ -190,20 +119,19 @@ fun EditarAlunoScreen(
 
             Button(
                 onClick = {
-                    viewModel.editarAluno(
-                        aluno.copy(
+                    viewModel.editarProfessor(
+                        professor.copy(
                             nome = nome,
                             email = email,
-                            telefone = telefoneRaw,
-                            plano = planoSelecionado,
-                            status = ativo
+                            cpf = cpfRaw,
+                            telefone = telefoneRaw
                         )
                     )
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
-                enabled = nome.isNotBlank() && email.isNotBlank() && planoSelecionado?.isNotBlank() == true
+                enabled = nome.isNotBlank() && email.isNotBlank() && cpfRaw.isNotBlank() && telefoneRaw.isNotBlank()
             ) {
                 Text("Salvar Alterações", color = Color.Black, fontWeight = FontWeight.Bold)
             }
