@@ -12,8 +12,8 @@ val mockUsuarios = mutableListOf(
     ),
     MockUsuario(
         nome = "Rafael Silva",
-        email = "prof@smartgym.com",
-        senha = "prof123",
+        email = "lulu123@smartgym.com",
+        senha = "prof12345",
         telefone = "(11) 99999-0002",
         papel = "professor"
     ),
@@ -39,7 +39,7 @@ object MockAuth {
     fun getRoleByEmail(email: String): String {
         return when (email.lowercase()) {
             "admin@smartgym.com"    -> "admin"
-            "prof@smartgym.com"     -> "professor"
+            "lulu123@smartgym.com"  -> "professor"
             else                    -> "aluno"
         }
     }

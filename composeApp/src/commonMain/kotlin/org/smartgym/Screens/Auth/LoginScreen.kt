@@ -27,7 +27,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import org.smartgym.Screen
 import org.smartgym.UserRole
-import org.smartgym.auth.MockAuth
+import org.smartgym.repository.ApiAuthRepository
 
 @Composable
 fun LoginScreen(
@@ -37,43 +37,54 @@ fun LoginScreen(
     val colors = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager.current // Controla o teclado
+    val focusManager = LocalFocusManager.current
+    val authRepository = remember { ApiAuthRepository() }
 
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
     var carregando by remember { mutableStateOf(false) }
 
-    // --- LÓGICA DE LOGIN CENTRALIZADA ---
+    // Validação básica local antes de chamar a API
+    fun validar(): String? {
+        if (email.isBlank()) return "⚠️ Informe seu email"
+        if (!email.contains("@")) return "⚠️ Email inválido"
+        if (senha.isBlank()) return "⚠️ Informe sua senha"
+        return null
+    }
+
+    // --- LÓGICA DE LOGIN REAL ---
     val performLogin = {
-        val erro = MockAuth.validarLogin(email, senha)
+        val erro = validar()
         if (erro != null) {
             scope.launch { snackbarHostState.showSnackbar(erro) }
         } else {
             carregando = true
             scope.launch {
                 try {
-                    val resultado = MockAuth.login(email, senha)
+                    val resultado = authRepository.login(email.trim(), senha)
                     carregando = false
 
                     if (resultado.sucesso && resultado.papel != null) {
-                        scope.launch { snackbarHostState.showSnackbar("✅ Login efetuado com sucesso!") }
-                        val userRole = when (resultado.papel) {
-                            "aluno" -> UserRole.ALUNO
+                        val userRole = when (resultado.papel.lowercase()) {
+                            "aluno"     -> UserRole.ALUNO
                             "professor" -> UserRole.PROFESSOR
-                            "admin" -> UserRole.ADMIN
-                            else -> return@launch
+                            "admin"     -> UserRole.ADMIN
+                            else        -> null
                         }
 
-                        if (onLoginSuccess != null) {
-                            onLoginSuccess(userRole)
+                        if (userRole != null) {
+                            scope.launch { snackbarHostState.showSnackbar("✅ ${resultado.mensagem}") }
+                            onLoginSuccess?.invoke(userRole)
+                        } else {
+                            scope.launch { snackbarHostState.showSnackbar("❌ Perfil desconhecido: ${resultado.papel}") }
                         }
                     } else {
                         scope.launch { snackbarHostState.showSnackbar("❌ ${resultado.mensagem}") }
                     }
                 } catch (e: Exception) {
                     carregando = false
-                    scope.launch { snackbarHostState.showSnackbar("❌ Erro: ${e.message}") }
+                    scope.launch { snackbarHostState.showSnackbar("❌ Erro de conexão: ${e.message}") }
                 }
             }
         }

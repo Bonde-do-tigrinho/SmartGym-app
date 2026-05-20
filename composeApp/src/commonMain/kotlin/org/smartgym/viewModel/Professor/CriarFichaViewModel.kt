@@ -16,6 +16,7 @@ import org.smartgym.model.professor.FichaTreino
 import org.smartgym.repository.AlunoRepository
 import org.smartgym.repository.ApiExercicioRepository
 import org.smartgym.repository.FichaTreinoRepository
+import org.smartgym.util.formatDateToUi
 
 class CriarFichaViewModel(
     private val alunoRepository: AlunoRepository,
@@ -86,7 +87,7 @@ class CriarFichaViewModel(
                     _selectedAlunoId.value = ficha.alunoId
                     _nomeAluno.value = _alunos.value.firstOrNull { it.id == ficha.alunoId }?.nome.orEmpty()
                     _focoTreino.value = ficha.focoTreino
-                    _vigencia.value = ficha.vigencia
+                    _vigencia.value = formatDateToUi(ficha.vigencia)
                     _selectedExercicios.value = ficha.exercicios
                 }
             } catch (_: Exception) {
@@ -110,7 +111,7 @@ class CriarFichaViewModel(
                     _selectedAlunoId.value = ficha.alunoId
                     _nomeAluno.value = _alunos.value.firstOrNull { it.id == ficha.alunoId }?.nome.orEmpty()
                     _focoTreino.value = ficha.focoTreino
-                    _vigencia.value = ficha.vigencia
+                    _vigencia.value = formatDateToUi(ficha.vigencia)
                     _selectedExercicios.value = ficha.exercicios
                 }
             } catch (_: Exception) {

@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.smartgym.Screens.Auth.LoginScreen
 import org.smartgym.Screens.Auth.RegisterScreen
+import org.smartgym.auth.TokenManager
 import org.smartgym.theme.AppTheme
 
 @Composable
@@ -37,6 +38,7 @@ fun App() {
             AppNavigation(
                 userRole = usuarioLogado.value!!,
                 onLogout = {
+                    TokenManager.clearToken()  // 🔐 Limpa o token JWT ao fazer logout
                     usuarioLogado.value = null
                 }
             )

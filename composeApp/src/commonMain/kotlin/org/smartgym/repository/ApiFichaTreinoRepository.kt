@@ -9,23 +9,17 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.json.Json
 import org.smartgym.model.professor.FichaTreino
 import org.smartgym.network.ApiClient
+import org.smartgym.util.formatDateToBackend
 class ApiFichaTreinoRepository : FichaTreinoRepository {
     private val client = ApiClient.client
     private val basePaths = listOf("/api/fichas-treino", "/api/ficha-treino", "/fichas-treino", "/ficha-treino")
     private fun url(basePath: String, path: String = "") = ApiClient.getUrl("$basePath$path")
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    private fun normalizarVigencia(data: String): String {
-        val valor = data.trim()
-        val partes = valor.split("/")
-
-        return if (partes.size == 3 && partes[0].length == 2 && partes[1].length == 2 && partes[2].length == 4) {
-            "${partes[2]}-${partes[1]}-${partes[0]}"
-        } else {
-            valor
-        }
-    }
+    private fun normalizarVigencia(data: String): String = formatDateToBackend(data)
 
     private suspend fun <T> execute(request: suspend (String) -> T): T {
         var lastError: Exception? = null
@@ -55,7 +49,10 @@ class ApiFichaTreinoRepository : FichaTreinoRepository {
         throw IllegalStateException("Nao foi possivel concluir a operacao de fichas.", lastError)
     }
     override suspend fun getAll(): List<FichaTreino> = execute { basePath ->
-        client.get(url(basePath)).body()
+        val response = client.get(url(basePath))
+        val bodyText = response.bodyAsText()
+        println("DEBUG FichaTreino getAll: $bodyText")
+        json.decodeFromString<List<FichaTreino>>(bodyText)
     }
     override suspend fun getById(id: Long): FichaTreino? = execute { basePath ->
         client.get(url(basePath, "/$id")).body()
