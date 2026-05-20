@@ -176,7 +176,9 @@ fun HomeProfessorScreen(navController: NavController) {
                     texto = "+ Nova Ficha de Treino",
                     backgroundColor = SmartGymGreen,
                     textColor = Color.Black,
-                    onClick = {}
+                    onClick = {
+                        navController.navigate(Screen.NovaFicha.route)
+                    }
                 )
 
                 BotaoAcaoRapida(

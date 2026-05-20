@@ -13,6 +13,7 @@ import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
 import org.smartgym.model.professor.Avaliacao
 import org.smartgym.network.ApiClient
+import org.smartgym.util.formatDateToBackend
 
 class ApiAvaliacaoRepository : AvaliacaoRepository {
 
@@ -56,18 +57,6 @@ class ApiAvaliacaoRepository : AvaliacaoRepository {
         )
     }
 
-    private fun normalizarData(data: String): String {
-        val valor = data.trim()
-        val partes = valor.split("/")
-
-        // Converte dd/MM/yyyy para yyyy-MM-dd para backend com LocalDate.
-        return if (partes.size == 3 && partes[0].length == 2 && partes[1].length == 2 && partes[2].length == 4) {
-            "${partes[2]}-${partes[1]}-${partes[0]}"
-        } else {
-            valor
-        }
-    }
-
     override suspend fun getAll(): List<Avaliacao> {
         return execute { basePath ->
             val response = client.get(url(basePath))
@@ -86,7 +75,7 @@ class ApiAvaliacaoRepository : AvaliacaoRepository {
     }
 
     override suspend fun create(avaliacao: Avaliacao) {
-        val payload = avaliacao.copy(dataAvaliacao = normalizarData(avaliacao.dataAvaliacao))
+        val payload = avaliacao.copy(dataAvaliacao = formatDateToBackend(avaliacao.dataAvaliacao))
         execute { basePath ->
             client.post(url(basePath)) {
                 contentType(ContentType.Application.Json)
@@ -96,7 +85,7 @@ class ApiAvaliacaoRepository : AvaliacaoRepository {
     }
 
     override suspend fun update(id: Int, avaliacao: Avaliacao) {
-        val payload = avaliacao.copy(dataAvaliacao = normalizarData(avaliacao.dataAvaliacao))
+        val payload = avaliacao.copy(dataAvaliacao = formatDateToBackend(avaliacao.dataAvaliacao))
         execute { basePath ->
             client.put(url(basePath, "/$id")) {
                 contentType(ContentType.Application.Json)

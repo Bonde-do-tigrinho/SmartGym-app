@@ -1,5 +1,6 @@
 package org.smartgym
 
+import MaquinaIotViewModel
 import MaquinaViewModel
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.SupervisorAccount
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
@@ -57,14 +59,16 @@ import org.smartgym.Screens.Aluno.TreinoScreen
 import org.smartgym.Screens.Professor.AvaliacoesScreen
 import org.smartgym.Screens.Professor.CriarAvaliacaoScreen
 import org.smartgym.Screens.Professor.CriarExercicioScreen
+import org.smartgym.Screens.Professor.CriarFichaScreen
 import org.smartgym.Screens.Professor.ExerciciosScreen
-import org.smartgym.Screens.Professor.FichasScreen
+import org.smartgym.Screens.Professor.FichasScreenReal
 import org.smartgym.Screens.Professor.HomeProfessorScreen
 import org.smartgym.viewModel.aluno.AparelhosViewModel
 import org.smartgym.viewModel.aluno.TreinoViewModel
 import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
+import org.smartgym.viewModel.Professor.FichasViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
@@ -72,9 +76,13 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.smartgym.Screens.Adm.EditarProfessorScreen
 import org.smartgym.Screens.Adm.MaquinasAdminScreen
+import org.smartgym.Screens.Adm.MaquinasIotAdminScreen
+import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Adm.NovoProfessorScreen
 import org.smartgym.Screens.Adm.ProfessoresAdminScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
+import org.smartgym.viewModel.Professor.CriarFichaViewModel
+import org.smartgym.repository.ApiFichaTreinoRepository
 import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
 import org.smartgym.viewModel.Adm.ProfessoresViewModel
@@ -191,14 +199,19 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         UserRole.PROFESSOR -> {
             val drawerState = rememberDrawerState(DrawerValue.Closed)
             val scope = rememberCoroutineScope()
-
             val professorItems = listOf(
                 Screen.HomeProfessor,
                 Screen.Exercicios,
                 Screen.Fichas,
                 Screen.Avaliacoes
             )
-
+            val professorRotasSemHeader = setOf(
+                Screen.NovoExercicio.route,
+                Screen.NovaAvaliacao.route,
+                Screen.NovaFicha.route,
+                Screen.EditarFicha.route
+            )
+            val mostrarHeaderProfessor = currentRoute !in professorRotasSemHeader
             val professorLabels = mapOf(
                 Screen.HomeProfessor.route to "Dashboard",
                 Screen.Exercicios.route to "Exercícios",
@@ -214,6 +227,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             )
 
             ModalNavigationDrawer(
+                gesturesEnabled = mostrarHeaderProfessor,
                 drawerState = drawerState,
                 drawerContent = {
                     ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
@@ -301,6 +315,23 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                             modifier = Modifier.shadow(elevation = 5.dp)
                         )
+                        if (mostrarHeaderProfessor) {
+                            TopAppBar(
+                                title = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                        Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                    }
+                                },
+                                navigationIcon = {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                    }
+                                },
+                                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                                modifier = Modifier.shadow(elevation = 5.dp)
+                            )
+                        }
                     }
                 ) { padding ->
                     NavContent(
@@ -325,6 +356,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.UnidadesAdmin.route,
                 "telaPlanos",
                 Screen.MaquinasAdmin.route,
+                Screen.MaquinasIotAdmin.route,
             )
 
             val adminLabels = mapOf(
@@ -333,6 +365,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.UnidadesAdmin.route to "Unidades",
                 "telaPlanos" to "Planos",
                 Screen.MaquinasAdmin.route to "Máquinas",
+                Screen.MaquinasIotAdmin.route to "Máquinas IOTs",
                 Screen.ProfessoresAdmin.route to "Professores",
             )
 
@@ -342,6 +375,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
                 "telaPlanos" to Icons.Rounded.Assignment,
                 Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
+                Screen.MaquinasIotAdmin.route to Icons.Outlined.Sensors,
                 Screen.ProfessoresAdmin.route to Icons.Outlined.SupervisorAccount,
             )
 
@@ -452,14 +486,30 @@ fun NavContent(
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
     val maquinaViewModel = remember { MaquinaViewModel() }
+    val maquinaIotViewModel = remember { MaquinaIotViewModel() }
     val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
     val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
+    val exercicioRepository = remember { org.smartgym.repository.ApiExercicioRepository() }
+    val fichaRepository = remember { ApiFichaTreinoRepository() }
     val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
-    val professoresViewModel = remember { ProfessoresViewModel() }
+    val fichasViewModel = remember { FichasViewModel(fichaRepository, alunoRepository) }
+    val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }    val professoresViewModel = remember { ProfessoresViewModel() }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
             println("SNACKBAR: $message")
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        criarFichaViewModel.snackbarEvent.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        fichasViewModel.snackbarEvent.collectLatest { message ->
             snackbarHostState.showSnackbar(message)
         }
     }
@@ -517,6 +567,20 @@ fun NavContent(
         }
 
         composable(Screen.Fichas.route) { FichasScreen(navController) }
+
+        composable(Screen.Fichas.route) {
+            FichasScreenReal(
+                navController = navController,
+                viewModel = fichasViewModel,
+                criarFichaViewModel = criarFichaViewModel
+            )
+        }
+        composable(Screen.NovaFicha.route) {
+            CriarFichaScreen(navController = navController, viewModel = criarFichaViewModel)
+        }
+        composable(Screen.EditarFicha.route) {
+            CriarFichaScreen(navController = navController, viewModel = criarFichaViewModel)
+        }
         composable(Screen.Avaliacoes.route) {
             AvaliacoesScreen(navController = navController, viewModel = avaliacoesViewModel)
         }
@@ -537,6 +601,10 @@ fun NavContent(
 
         composable(Screen.MaquinasAdmin.route) {
             MaquinasAdminScreen(viewModel = maquinaViewModel)
+        }
+
+        composable(Screen.MaquinasIotAdmin.route) {
+            MaquinasIotAdminScreen(viewModel = maquinaIotViewModel)
         }
 
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }

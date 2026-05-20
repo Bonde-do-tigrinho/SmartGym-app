@@ -14,6 +14,8 @@ sealed class Screen(val route: String){
     object Exercicios : Screen("exercicios")
     object NovoExercicio : Screen("novo_exercicio")
     object Fichas : Screen("fichas")
+    object NovaFicha : Screen("nova_ficha")
+    object EditarFicha : Screen("editar_ficha")
     object Avaliacoes : Screen("avaliacoes")
     object NovaAvaliacao : Screen("nova_avaliacao")
 
@@ -21,6 +23,7 @@ sealed class Screen(val route: String){
     object HomeAdmin: Screen("home_admin")
     object UnidadesAdmin : Screen("unidades_admin")
     object MaquinasAdmin : Screen("maquinas_admin")
+    object MaquinasIotAdmin : Screen("maquinas_iot_admin")
     object AlunosAdmin: Screen("alunos_admin")
     object NovoAluno : Screen("novo_aluno")
     object EditarAluno : Screen("editar_aluno")
