@@ -1,5 +1,6 @@
 package org.smartgym
 
+import MaquinaIotViewModel
 import MaquinaViewModel
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Home
@@ -71,6 +73,7 @@ import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.smartgym.Screens.Adm.MaquinasAdminScreen
+import org.smartgym.Screens.Adm.MaquinasIotAdminScreen
 import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
@@ -345,7 +348,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route,
                 Screen.UnidadesAdmin.route,
                 "telaPlanos",
-                Screen.MaquinasAdmin.route
+                Screen.MaquinasAdmin.route,
+                Screen.MaquinasIotAdmin.route
             )
 
             val adminLabels = mapOf(
@@ -353,7 +357,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
                 "telaPlanos" to "Planos",
-                Screen.MaquinasAdmin.route to "Máquinas"
+                Screen.MaquinasAdmin.route to "Máquinas",
+                Screen.MaquinasIotAdmin.route to "Máquinas IOTs"
             )
 
             val adminIcons = mapOf(
@@ -361,7 +366,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
                 "telaPlanos" to Icons.Rounded.Assignment,
-                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter
+                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
+                Screen.MaquinasIotAdmin.route to Icons.Outlined.Sensors
             )
 
             ModalNavigationDrawer(
@@ -471,6 +477,7 @@ fun NavContent(
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
     val maquinaViewModel = remember { MaquinaViewModel() }
+    val maquinaIotViewModel = remember { MaquinaIotViewModel() }
     val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
     val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
     val exercicioRepository = remember { org.smartgym.repository.ApiExercicioRepository() }
@@ -584,6 +591,10 @@ fun NavContent(
 
         composable(Screen.MaquinasAdmin.route) {
             MaquinasAdminScreen(viewModel = maquinaViewModel)
+        }
+
+        composable(Screen.MaquinasIotAdmin.route) {
+            MaquinasIotAdminScreen(viewModel = maquinaIotViewModel)
         }
 
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
