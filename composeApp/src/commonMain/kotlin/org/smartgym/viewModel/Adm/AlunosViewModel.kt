@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.smartgym.model.Adm.Aluno
+import org.smartgym.model.Adm.Usuario
 import org.smartgym.network.ApiClient
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -41,7 +41,7 @@ class AlunosViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    val alunosFiltrados: StateFlow<List<Aluno>> = combine(_alunos, _searchQuery) { lista, query ->
+    val alunosFiltrados: StateFlow<List<Usuario>> = combine(_alunos, _searchQuery) { lista, query ->
         if (query.isBlank()) lista
         else lista.filter { it.nome.contains(query, ignoreCase = true) }
     }.stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), _alunos.value)
@@ -126,7 +126,7 @@ class AlunosViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val novoAluno = Aluno(
+                val novoUsuario = Usuario(
                     id = null,
                     nome = nome,
                     email = email,
@@ -148,7 +148,7 @@ class AlunosViewModel : ViewModel() {
                 }
 
                 carregarAlunos()
-                _snackbarEvent.emit("Aluno cadastrado com sucesso!")
+                _snackbarEvent.emit("Usuario cadastrado com sucesso!")
                 _navigationEvent.emit(Unit)
 
             } catch (e: Exception) {
@@ -167,7 +167,7 @@ class AlunosViewModel : ViewModel() {
                     client.delete(url(basePath, "/$id"))
                 }
                 carregarAlunos()
-                _snackbarEvent.emit("Aluno deletado com sucesso!")
+                _snackbarEvent.emit("Usuario deletado com sucesso!")
 
             } catch (e: Exception) {
                 _errorMessage.value = "Erro ao deletar aluno: ${e.message}"
@@ -177,7 +177,7 @@ class AlunosViewModel : ViewModel() {
         }
     }
 
-    fun editarAluno(aluno: Aluno) {
+    fun editarAluno(usuario: Usuario) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -189,11 +189,11 @@ class AlunosViewModel : ViewModel() {
                 }
 
                 carregarAlunos()
-                _snackbarEvent.emit("Aluno atualizado com sucesso!")
+                _snackbarEvent.emit("Usuario atualizado com sucesso!")
                 _navigationEvent.emit(Unit)
 
             } catch (e: Exception) {
-                _errorMessage.value = "Erro ao editar aluno: ${e.message}"
+                _errorMessage.value = "Erro ao editar usuario: ${e.message}"
             } finally {
                 _isLoading.value = false
             }

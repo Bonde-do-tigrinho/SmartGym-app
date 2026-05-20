@@ -248,7 +248,7 @@ fun FichaItem(ficha: Ficha) {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Nome do Aluno - Destaque
+            // Nome do Usuario - Destaque
             Text(
                 ficha.nomeAluno,
                 fontSize = 18.sp,
