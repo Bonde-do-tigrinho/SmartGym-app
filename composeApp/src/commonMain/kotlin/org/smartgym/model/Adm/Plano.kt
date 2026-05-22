@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 data class Plano(
     val id: Int? = null,
     val nome: String,
-    val ativo: Boolean,
-    val dataFimPromocao: String,
-    val horarioLimiteAcesso: String
+    val descricao: String,
+    val valor: Double,
+    val duracaoMeses: Int,
+    val ativo: Boolean
 )
