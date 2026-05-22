@@ -8,19 +8,27 @@ import org.smartgym.network.ApiClient
 
 class ApiPlanoRepository {
     private val client = ApiClient.client
+    private fun url(endpoint: String = "") = ApiClient.getUrl("/api/planos$endpoint")
 
-    private fun url(path: String = "") = ApiClient.getUrl("/api/planos$path")
+    suspend fun getAll(): List<Plano> = client.get(url()).body()
 
-    suspend fun buscarTodos(): List<Plano> = client.get(url()).body()
+    suspend fun getById(id: Int): Plano? = client.get(url("/$id")).body()
 
-    suspend fun salvar(plano: Plano) {
-        client.post(url()) {
+    suspend fun create(plano: Plano): Plano {
+        return client.post(url()) {
             contentType(ContentType.Application.Json)
             setBody(plano)
-        }
+        }.body()
     }
 
-    suspend fun deletar(id: Int) {
+    suspend fun update(id: Int, plano: Plano): Plano {
+        return client.put(url("/$id")) {
+            contentType(ContentType.Application.Json)
+            setBody(plano)
+        }.body()
+    }
+
+    suspend fun delete(id: Int) {
         client.delete(url("/$id"))
     }
 }
