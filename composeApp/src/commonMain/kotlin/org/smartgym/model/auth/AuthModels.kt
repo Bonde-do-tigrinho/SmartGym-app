@@ -23,14 +23,17 @@ data class LoginResponse(
 data class RegisterRequest(
     val nome: String,
     val email: String,
+    val cpf: String,
     val telefone: String,
     val senha: String
 )
 
 @Serializable
 data class AuthResponse(
-    val sucesso: Boolean,
-    val mensagem: String
+    val sucesso: Boolean = true,
+    val mensagem: String? = null,
+    val id: Long? = null,
+    val email: String? = null
 )
 
 @Serializable

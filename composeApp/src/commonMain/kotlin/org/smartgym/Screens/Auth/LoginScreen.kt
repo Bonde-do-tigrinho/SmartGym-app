@@ -44,6 +44,16 @@ fun LoginScreen(
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
 
+    val mensagemCadastro = navController?.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("mensagem")
+
+    LaunchedEffect(mensagemCadastro) {
+        if (!mensagemCadastro.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(mensagemCadastro)
+        }
+    }
+
     LaunchedEffect(state) {
         when (val s = state) {
             is AuthState.Error -> {
