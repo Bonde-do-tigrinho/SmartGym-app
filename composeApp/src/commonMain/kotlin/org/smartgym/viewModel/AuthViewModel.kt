@@ -12,7 +12,7 @@ import org.smartgym.repository.ApiAuthRepository
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    data class Success(val message: String) : AuthState()
+    data class Success(val message: String?) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -53,25 +53,27 @@ class AuthViewModel : ViewModel() {
     fun registrar(
         nome: String,
         email: String,
+        cpf: String,
         telefone: String,
         senha: String,
         confirmarSenha: String,
         onSuccess: () -> Unit
     ) {
-        if (nome.isBlank()) { _state.value = AuthState.Error("Informe seu nome"); return }
-        if (email.isBlank() || !email.contains("@")) { _state.value = AuthState.Error("Email inválido"); return }
-        if (telefone.length != 11) { _state.value = AuthState.Error("Telefone inválido"); return }
-        if (senha.length < 6) { _state.value = AuthState.Error("Senha deve ter no mínimo 6 caracteres"); return }
-        if (senha != confirmarSenha) { _state.value = AuthState.Error("As senhas não coincidem"); return }
+        if (nome.isBlank()) { _state.value = AuthState.Error("⚠️ Informe seu nome"); return }
+        if (email.isBlank() || !email.contains("@")) { _state.value = AuthState.Error("⚠️ Email inválido"); return }
+        if (cpf.length != 11) { _state.value = AuthState.Error("⚠️ CPF inválido"); return }
+        if (telefone.length != 11) { _state.value = AuthState.Error("⚠️ Telefone inválido"); return }
+        if (senha.length < 6) { _state.value = AuthState.Error("⚠️ Senha deve ter no mínimo 6 caracteres"); return }
+        if (senha != confirmarSenha) { _state.value = AuthState.Error("⚠️ As senhas não coincidem"); return }
 
         _state.value = AuthState.Loading
         viewModelScope.launch {
-            val resultado = repository.registrar(nome, email, telefone, senha)
+            val resultado = repository.registrar(nome, email, cpf, telefone, senha)
             if (resultado.sucesso) {
                 _state.value = AuthState.Success(resultado.mensagem)
                 onSuccess()
             } else {
-                _state.value = AuthState.Error("${resultado.mensagem}")
+                _state.value = AuthState.Error(" ${resultado.mensagem}")
             }
         }
     }

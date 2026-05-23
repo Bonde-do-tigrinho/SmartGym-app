@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import org.smartgym.Screens.Adm.CpfVisualTransformation
 import org.smartgym.Screens.Adm.TelefoneVisualTransformation
 import org.smartgym.viewModel.AuthState
 import org.smartgym.viewModel.AuthViewModel
@@ -38,6 +39,7 @@ fun RegisterScreen(
 
     var nome by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var cpf by remember { mutableStateOf("") }
     var telefone by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var confirmarSenha by remember { mutableStateOf("") }
@@ -54,8 +56,11 @@ fun RegisterScreen(
                 viewModel.resetState()
             }
             is AuthState.Success -> {
-                cadastroSucesso = true
                 viewModel.resetState()
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("mensagem", "✅ Cadastro realizado! Verifique seu email para ativar sua conta.")
+                navController.popBackStack()
             }
             else -> {}
         }
@@ -64,8 +69,7 @@ fun RegisterScreen(
     val carregando = state is AuthState.Loading
 
     val performRegister = {
-        viewModel.registrar(nome, email, telefone, senha, confirmarSenha) {
-            cadastroSucesso = true
+        viewModel.registrar(nome, email, cpf, telefone, senha, confirmarSenha) {
         }
     }
 
@@ -99,6 +103,31 @@ fun RegisterScreen(
             Spacer(Modifier.height(16.dp))
             CampoTexto("Email", email, { email = it }, "seu@email.com", colors, KeyboardType.Email, imeAction = ImeAction.Next)
             Spacer(Modifier.height(16.dp))
+
+            Spacer(Modifier.height(16.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("CPF", color = colors.onBackground, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = cpf,
+                    onValueChange = { input -> cpf = input.filter { it.isDigit() }.take(11) },
+                    placeholder = { Text("000.000.000-00", color = colors.onSurfaceVariant) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                    visualTransformation = CpfVisualTransformation(),
+                    supportingText = {
+                        Text("${cpf.length}/11 dígitos", color = if (cpf.length == 11) colors.primary else colors.onSurfaceVariant, fontSize = 11.sp)
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (cpf.length in listOf(0, 11)) colors.primary else colors.error,
+                        unfocusedBorderColor = if (cpf.length in listOf(0, 11)) colors.surfaceVariant else colors.error,
+                        focusedContainerColor = colors.surface, unfocusedContainerColor = colors.surface,
+                        focusedTextColor = colors.onSurface, unfocusedTextColor = colors.onSurface
+                    )
+                )
+            }
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text("Telefone", color = colors.onBackground, fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -223,6 +252,20 @@ fun RegisterScreen(
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text("Ir para o Login", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                } else {
+                    Button(
+                        onClick = { performRegister() },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
+                        enabled = !carregando
+                    ) {
+                        if (carregando) {
+                            CircularProgressIndicator(color = colors.onPrimary, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Criar conta", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
                     }
                 }
             }

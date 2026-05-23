@@ -15,7 +15,7 @@ data class LoginResult(
 
 data class AuthResult(
     val sucesso: Boolean,
-    val mensagem: String
+    val mensagem: String?
 )
 
 data class ResetarSenhaRequest(
@@ -53,15 +53,22 @@ class ApiAuthRepository {
     suspend fun registrar(
         nome: String,
         email: String,
+        cpf: String,
         telefone: String,
         senha: String
     ): AuthResult {
         return try {
             val response: AuthResponse = ApiClient.client.post(ApiClient.getUrl("/api/auth/register")) {
                 contentType(ContentType.Application.Json)
-                setBody(RegisterRequest(nome, email, telefone, senha))
+                setBody(RegisterRequest(nome, email, cpf, telefone, senha))
             }.body()
-            AuthResult(sucesso = response.sucesso, mensagem = response.mensagem)
+
+            val deuCerto = response.id != null || response.sucesso == true
+
+            AuthResult(
+                sucesso = deuCerto,
+                mensagem = if (deuCerto) "Cadastro realizado! Verifique seu email." else (response.mensagem ?: "Erro no cadastro")
+            )
         } catch (e: Exception) {
             AuthResult(sucesso = false, mensagem = e.message ?: "Erro de conexão")
         }
