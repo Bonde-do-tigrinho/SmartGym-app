@@ -29,8 +29,8 @@ class AlunosViewModel : ViewModel() {
 
     private val client = ApiClient.client
     private val basePaths = listOf("/api/alunos", "/alunos", "/api/aluno", "/aluno")
-    private val _alunos = MutableStateFlow<List<Aluno>>(emptyList())
-    val alunos: StateFlow<List<Aluno>> = _alunos.asStateFlow()
+    private val _alunos = MutableStateFlow<List<Usuario>>(emptyList())
+    val alunos: StateFlow<List<Usuario>> = _alunos.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -96,7 +96,7 @@ class AlunosViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val result: List<Aluno> = executeAlunoRequest { basePath ->
+                val result: List<Usuario> = executeAlunoRequest { basePath ->
                     val resolvedUrl = url(basePath)
                     println("CHAMANDO API: $resolvedUrl")
                     client.get(resolvedUrl).body()
@@ -143,7 +143,7 @@ class AlunosViewModel : ViewModel() {
                 executeAlunoRequest { basePath ->
                     client.post(url(basePath)) {
                         contentType(ContentType.Application.Json)
-                        setBody(novoAluno)
+                        setBody(novoUsuario)
                     }
                 }
 
@@ -182,9 +182,9 @@ class AlunosViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 executeAlunoRequest { basePath ->
-                    client.put(url(basePath, "/${aluno.id}")) {
+                    client.put(url(basePath, "/${usuario.id}")) {
                         contentType(ContentType.Application.Json)
-                        setBody(aluno)
+                        setBody(usuario)
                     }
                 }
 

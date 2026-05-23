@@ -51,6 +51,7 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
                 implementation("io.ktor:ktor-client-cio:2.3.7")
+                implementation("org.slf4j:slf4j-simple:2.0.12")
             }
         }
 
@@ -87,6 +88,7 @@ kotlin {
             implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
         }
 
         val jsMain by getting {

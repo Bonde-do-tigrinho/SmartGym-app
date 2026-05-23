@@ -7,9 +7,8 @@ import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.*
 import kotlinx.serialization.json.Json
-import org.smartgym.auth.TokenManager
+import org.smartgym.Auth.TokenManager
 
-// 🔐 Plugin personalizado para adicionar Authorization header automaticamente
 class AuthorizationHeaderPlugin {
     companion object Plugin : HttpClientPlugin<Unit, AuthorizationHeaderPlugin> {
         override val key = AttributeKey<AuthorizationHeaderPlugin>("AuthorizationHeaderPlugin")
@@ -32,7 +31,7 @@ object ApiClient {
     // Android Emulador → 10.0.2.2
     // Web/Desktop → localhost:8080
     //android fisico -> http://192.168.x.x:8080
-    private const val BASE_URL = "http://localhost:8080"
+    private const val BASE_URL = "http://192.168.100.2:8080"
 
     val client = HttpClient {
         install(ContentNegotiation) {
@@ -43,7 +42,6 @@ object ApiClient {
             })
         }
 
-        // 🔐 Instala o plugin de autorização
         install(AuthorizationHeaderPlugin)
     }
 

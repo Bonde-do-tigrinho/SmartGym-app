@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -25,68 +24,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
-import org.smartgym.Screen
 import org.smartgym.UserRole
-import org.smartgym.repository.ApiAuthRepository
+import org.smartgym.viewModel.AuthState
+import org.smartgym.viewModel.AuthViewModel
 
 @Composable
 fun LoginScreen(
     navController: NavController? = null,
-    onLoginSuccess: ((UserRole) -> Unit)? = null
+    onLoginSuccess: ((UserRole) -> Unit)? = null,
+    viewModel: AuthViewModel = remember { AuthViewModel() }
 ) {
     val colors = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
-    val authRepository = remember { ApiAuthRepository() }
+    val state by viewModel.state.collectAsState()
 
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
-    var carregando by remember { mutableStateOf(false) }
 
-    // Validação básica local antes de chamar a API
-    fun validar(): String? {
-        if (email.isBlank()) return "⚠️ Informe seu email"
-        if (!email.contains("@")) return "⚠️ Email inválido"
-        if (senha.isBlank()) return "⚠️ Informe sua senha"
-        return null
+    LaunchedEffect(state) {
+        when (val s = state) {
+            is AuthState.Error -> {
+                snackbarHostState.showSnackbar(s.message)
+                viewModel.resetState()
+            }
+            is AuthState.Success -> viewModel.resetState()
+            else -> {}
+        }
     }
 
-    // --- LÓGICA DE LOGIN REAL ---
+    val carregando = state is AuthState.Loading
+
     val performLogin = {
-        val erro = validar()
-        if (erro != null) {
-            scope.launch { snackbarHostState.showSnackbar(erro) }
-        } else {
-            carregando = true
-            scope.launch {
-                try {
-                    val resultado = authRepository.login(email.trim(), senha)
-                    carregando = false
-
-                    if (resultado.sucesso && resultado.papel != null) {
-                        val userRole = when (resultado.papel.lowercase()) {
-                            "aluno"     -> UserRole.ALUNO
-                            "professor" -> UserRole.PROFESSOR
-                            "admin"     -> UserRole.ADMIN
-                            else        -> null
-                        }
-
-                        if (userRole != null) {
-                            scope.launch { snackbarHostState.showSnackbar("✅ ${resultado.mensagem}") }
-                            onLoginSuccess?.invoke(userRole)
-                        } else {
-                            scope.launch { snackbarHostState.showSnackbar("❌ Perfil desconhecido: ${resultado.papel}") }
-                        }
-                    } else {
-                        scope.launch { snackbarHostState.showSnackbar("❌ ${resultado.mensagem}") }
-                    }
-                } catch (e: Exception) {
-                    carregando = false
-                    scope.launch { snackbarHostState.showSnackbar("❌ Erro de conexão: ${e.message}") }
-                }
-            }
+        focusManager.clearFocus()
+        viewModel.login(email.trim(), senha) { role ->
+            onLoginSuccess?.invoke(role)
         }
     }
 
@@ -187,7 +161,7 @@ fun LoginScreen(
             Spacer(Modifier.height(8.dp))
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                TextButton(onClick = { /* TODO */ }) {
+                TextButton(onClick = { navController?.navigate("recuperar-senha")}) {
                     Text("Esqueceu sua senha?", color = colors.onSurfaceVariant, fontSize = 13.sp)
                 }
             }

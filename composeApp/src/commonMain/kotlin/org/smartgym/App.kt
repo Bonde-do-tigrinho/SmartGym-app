@@ -1,20 +1,25 @@
 package org.smartgym
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import org.smartgym.Auth.TokenManager
+import org.smartgym.Screens.Auth.ForgotPasswordScreen
 import org.smartgym.Screens.Auth.LoginScreen
 import org.smartgym.Screens.Auth.RegisterScreen
-import org.smartgym.auth.TokenManager
+import org.smartgym.Screens.Auth.ResetPasswordScreen
 import org.smartgym.theme.AppTheme
+import org.smartgym.viewModel.AuthViewModel
 
 @Composable
-fun App() {
+fun App(resetToken: String? = null) {
     AppTheme {
         val usuarioLogado = remember { mutableStateOf<UserRole?>(null) }
+        val authViewModel = remember { AuthViewModel() }
+        val authNavController = rememberNavController()
+
+        val startDestination = if (resetToken != null) "resetar-senha/$resetToken" else "login"
 
         if (usuarioLogado.value == null) {
             val authNavController = rememberNavController()
@@ -23,14 +28,28 @@ fun App() {
                 composable("login") {
                     LoginScreen(
                         navController = authNavController,
-                        onLoginSuccess = { userRole ->
-                            usuarioLogado.value = userRole
-                        }
+                        onLoginSuccess = { userRole -> usuarioLogado.value = userRole },
+                        viewModel = authViewModel
                     )
                 }
                 composable("cadastro") {
                     RegisterScreen(
-                        navController = authNavController
+                        navController = authNavController,
+                        viewModel = authViewModel
+                    )
+                }
+                composable("recuperar-senha") {
+                    ForgotPasswordScreen(
+                        navController = authNavController,
+                        viewModel = authViewModel
+                    )
+                }
+                composable("resetar-senha/{token}") { backStackEntry ->
+                    val token = backStackEntry.savedStateHandle.get<String>("token") ?: ""
+                    ResetPasswordScreen(
+                        navController = authNavController,
+                        viewModel = authViewModel,
+                        token = token
                     )
                 }
             }
@@ -38,7 +57,7 @@ fun App() {
             AppNavigation(
                 userRole = usuarioLogado.value!!,
                 onLogout = {
-                    TokenManager.clearToken()  // 🔐 Limpa o token JWT ao fazer logout
+                    TokenManager.clearToken()
                     usuarioLogado.value = null
                 }
             )

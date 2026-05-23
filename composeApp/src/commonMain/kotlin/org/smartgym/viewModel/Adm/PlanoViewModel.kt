@@ -16,27 +16,49 @@ class PlanoViewModel : ViewModel() {
     private val _planos = MutableStateFlow<List<Plano>>(emptyList())
     val planos = _planos.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent = _snackbarEvent.asSharedFlow()
 
+    init {
+        carregarPlanos()
+    }
+
     fun carregarPlanos() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                _planos.value = repository.buscarTodos()
+                _planos.value = repository.getAll()
             } catch (e: Exception) {
-                _snackbarEvent.emit("Erro ao carregar: ${e.message}")
+                _snackbarEvent.emit("Erro ao carregar planos: ${e.message}")
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun salvarPlano(plano: Plano) {
+    fun criarPlano(plano: Plano) {
         viewModelScope.launch {
             try {
-                repository.salvar(plano)
-                _snackbarEvent.emit("Plano salvo com sucesso!")
-                carregarPlanos()
+                repository.create(plano)
+                _snackbarEvent.emit("Plano criado com sucesso!")
+                carregarPlanos() // Atualiza a lista
             } catch (e: Exception) {
-                _snackbarEvent.emit("Erro ao salvar: ${e.message}")
+                _snackbarEvent.emit("Erro ao criar plano: ${e.message}")
+            }
+        }
+    }
+
+    fun atualizarPlano(id: Int, plano: Plano) {
+        viewModelScope.launch {
+            try {
+                repository.update(id, plano)
+                _snackbarEvent.emit("Plano atualizado com sucesso!")
+                carregarPlanos() // Atualiza a lista
+            } catch (e: Exception) {
+                _snackbarEvent.emit("Erro ao atualizar plano: ${e.message}")
             }
         }
     }
@@ -44,11 +66,11 @@ class PlanoViewModel : ViewModel() {
     fun deletarPlano(id: Int) {
         viewModelScope.launch {
             try {
-                repository.deletar(id)
-                _snackbarEvent.emit("Plano apagado.")
-                carregarPlanos()
+                repository.delete(id)
+                _snackbarEvent.emit("Plano excluído com sucesso.")
+                carregarPlanos() // Atualiza a lista
             } catch (e: Exception) {
-                _snackbarEvent.emit("Erro ao deletar: ${e.message}")
+                _snackbarEvent.emit("Erro ao excluir plano: ${e.message}")
             }
         }
     }

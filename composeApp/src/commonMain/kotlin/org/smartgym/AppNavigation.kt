@@ -493,7 +493,8 @@ fun NavContent(
     val fichaRepository = remember { ApiFichaTreinoRepository() }
     val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
     val fichasViewModel = remember { FichasViewModel(fichaRepository, alunoRepository) }
-    val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }    val professoresViewModel = remember { ProfessoresViewModel() }
+    val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }
+    val professoresViewModel = remember { ProfessoresViewModel() }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->

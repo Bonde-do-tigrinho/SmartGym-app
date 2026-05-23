@@ -17,55 +17,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import kotlinx.coroutines.launch
-import org.smartgym.auth.MockAuth
-
-class TelefoneVisualTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val digits = text.text.take(11)
-        val formatted = buildString {
-            digits.forEachIndexed { i, c ->
-                when (i) {
-                    0 -> append("($c")
-                    1 -> append("$c) ")
-                    6 -> append("$c-")
-                    else -> append(c)
-                }
-            }
-        }
-        val offsetMap = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                return when {
-                    offset <= 0 -> 0
-                    offset <= 1 -> offset + 1
-                    offset <= 2 -> offset + 2
-                    offset <= 6 -> offset + 3
-                    offset <= 11 -> offset + 4
-                    else -> formatted.length
-                }
-            }
-            override fun transformedToOriginal(offset: Int): Int {
-                return when {
-                    offset <= 1 -> 0
-                    offset <= 3 -> offset - 1
-                    offset <= 5 -> offset - 2
-                    offset <= 9 -> offset - 3
-                    else -> offset - 4
-                }.coerceIn(0, digits.length)
-            }
-        }
-        return TransformedText(AnnotatedString(formatted), offsetMap)
-    }
-}
+import org.smartgym.Screens.Adm.TelefoneVisualTransformation
+import org.smartgym.viewModel.AuthState
+import org.smartgym.viewModel.AuthViewModel
 
 @Composable
-fun RegisterScreen(navController: NavController) {
+fun RegisterScreen(
+    navController: NavController,
+    viewModel: AuthViewModel = remember { AuthViewModel() }
+) {
     val colors = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -78,27 +43,29 @@ fun RegisterScreen(navController: NavController) {
     var confirmarSenha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
     var confirmarSenhaVisivel by remember { mutableStateOf(false) }
-    var carregando by remember { mutableStateOf(false) }
 
-    // --- LÓGICA DE CADASTRO CENTRALIZADA ---
-    val performRegister = {
-        val erro = MockAuth.validarCadastro(nome, email, telefone, senha, confirmarSenha)
-        if (erro != null) {
-            scope.launch { snackbarHostState.showSnackbar(erro) }
-        } else {
-            carregando = true
-            scope.launch {
-                val resultado = MockAuth.cadastrar(nome, email, telefone, senha)
-                carregando = false
-                if (resultado.sucesso) {
-                    snackbarHostState.showSnackbar("✅ Conta criada com sucesso! Faça login.")
-                    navController.navigate("login") {
-                        popUpTo("cadastro") { inclusive = true }
-                    }
-                } else {
-                    snackbarHostState.showSnackbar("❌ ${resultado.mensagem}")
-                }
+    val state by viewModel.state.collectAsState()
+    var cadastroSucesso by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state) {
+        when (val s = state) {
+            is AuthState.Error -> {
+                snackbarHostState.showSnackbar(s.message)
+                viewModel.resetState()
             }
+            is AuthState.Success -> {
+                cadastroSucesso = true
+                viewModel.resetState()
+            }
+            else -> {}
+        }
+    }
+
+    val carregando = state is AuthState.Loading
+
+    val performRegister = {
+        viewModel.registrar(nome, email, telefone, senha, confirmarSenha) {
+            cadastroSucesso = true
         }
     }
 
@@ -228,16 +195,35 @@ fun RegisterScreen(navController: NavController) {
             Spacer(Modifier.height(32.dp))
 
             Button(
-                onClick = { performRegister() }, // Chama o cadastro no botão
+                onClick = { performRegister() },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
                 enabled = !carregando
             ) {
-                if (carregando) {
-                    CircularProgressIndicator(color = colors.onPrimary, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("Criar conta", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (cadastroSucesso) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = colors.primaryContainer),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("✅ Cadastro realizado!", fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Verifique seu email para ativar sua conta antes de fazer login.",
+                                color = colors.onPrimaryContainer, fontSize = 13.sp
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text("Ir para o Login", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
             }
 
@@ -255,7 +241,7 @@ fun RegisterScreen(navController: NavController) {
 }
 
 @Composable
-private fun CampoTexto(
+fun CampoTexto(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,

@@ -24,7 +24,7 @@ fun EditarAlunoScreen(
     navController: NavController,
     alunoId: Int,
     modifier: Modifier = Modifier,
-    viewModel: AlunosViewModel // ✅ sem = viewModel()
+    viewModel: AlunosViewModel
 ) {
     val alunos by viewModel.alunos.collectAsState()
     val aluno = alunos.find { it.id == alunoId }
