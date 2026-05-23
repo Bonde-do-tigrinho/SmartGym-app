@@ -7,9 +7,8 @@ import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.*
 import kotlinx.serialization.json.Json
-import org.smartgym.auth.TokenManager
+import org.smartgym.Auth.TokenManager
 
-// 🔐 Plugin personalizado para adicionar Authorization header automaticamente
 class AuthorizationHeaderPlugin {
     companion object Plugin : HttpClientPlugin<Unit, AuthorizationHeaderPlugin> {
         override val key = AttributeKey<AuthorizationHeaderPlugin>("AuthorizationHeaderPlugin")
@@ -43,7 +42,6 @@ object ApiClient {
             })
         }
 
-        // 🔐 Instala o plugin de autorização
         install(AuthorizationHeaderPlugin)
     }
 
