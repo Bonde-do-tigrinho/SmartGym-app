@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Home
@@ -424,7 +425,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
                         NavigationDrawerItem(
                             label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                            icon = { Icon(Icons.Default.Menu, contentDescription = null) }, // pode trocar por logout depois
+                            icon = { Icon(Icons.Default.Logout, contentDescription = null) }, // pode trocar por logout depois
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
@@ -613,10 +614,8 @@ fun NavContent(
         composable(
             route = "${Screen.EditarAluno.route}/{alunoId}"
         ) { backStackEntry ->
-
-            val alunoId = backStackEntry.destination.route
-                ?.split("/")
-                ?.lastOrNull()
+            val alunoId = backStackEntry.savedStateHandle
+                .get<String>("alunoId")
                 ?.toIntOrNull()
 
             if (alunoId != null) {
@@ -626,7 +625,25 @@ fun NavContent(
                     viewModel = alunosViewModel
                 )
             } else {
-                println("ERRO: ID do aluno não encontrado")
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
+        }
+
+        composable(
+            route = "${Screen.EditarProfessor.route}/{professorId}"
+        ) { backStackEntry ->
+            val professorId = backStackEntry.savedStateHandle
+                .get<String>("professorId")
+                ?.toIntOrNull()
+
+            if (professorId != null) {
+                EditarProfessorScreen(
+                    professorId = professorId,
+                    navController = navController,
+                    viewModel = professoresViewModel
+                )
+            } else {
+                println("ERRO: ID do professor não encontrado")
                 LaunchedEffect(Unit) { navController.popBackStack() }
             }
         }
@@ -639,26 +656,6 @@ fun NavContent(
             NovoProfessorScreen(navController, viewModel = professoresViewModel)
         }
 
-        composable(
-            route = "${Screen.EditarAluno.route}/{professorId}"
-        ) { backStackEntry ->
-
-            val professorId = backStackEntry.destination.route
-                ?.split("/")
-                ?.lastOrNull()
-                ?.toIntOrNull()
-
-            if (professorId != null) {
-                EditarAlunoScreen(
-                    alunoId = professorId,
-                    navController = navController,
-                    viewModel = alunosViewModel
-                )
-            } else {
-                println("ERRO: ID do professor não encontrado")
-                LaunchedEffect(Unit) { navController.popBackStack() }
-            }
-        }
     }
 }
 
