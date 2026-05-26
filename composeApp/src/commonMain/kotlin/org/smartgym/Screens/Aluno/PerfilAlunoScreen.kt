@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,16 +19,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.runtime.getValue
+import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
 
 @Composable
-fun PerfilAlunoScreen(navController: NavController, onLogout: () -> Unit) {
+fun PerfilAlunoScreen(
+    navController: NavController,
+    viewModel: AlunoPerfilViewModel,
+    onLogout: () -> Unit
+) {
+    val perfil by viewModel.perfil.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val colors = MaterialTheme.colorScheme
+
+    val nome = perfil?.nome ?: "Usuário"
+    val email = perfil?.email ?: ""
+    val initials = nome.split(" ")
+        .mapNotNull { it.firstOrNull()?.toString() }
+        .take(2)
+        .joinToString("")
+        .uppercase()
+
+    if (isLoading) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = colors.primary)
+        }
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colors.background)
             .padding(20.dp)
     ) {
-        // --- HEADER DO PERFIL ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -36,42 +61,40 @@ fun PerfilAlunoScreen(navController: NavController, onLogout: () -> Unit) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(colors.primary),
                 contentAlignment = Alignment.Center
             ) {
-                Text("L", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(initials, fontSize = 32.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text("LEANDRO", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                Text("leandro@smartgym.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(nome.uppercase(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                Text(email, fontSize = 13.sp, color = colors.onSurfaceVariant)
             }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-        Text("Configurações da Conta", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text("Configurações da Conta", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.primary)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- OPÇÕES DO MENU ---
-        PerfilOpcao(icon = Icons.Default.Person, title = "Meus Dados", subtitle = "Edite suas informações pessoais") {}
-        PerfilOpcao(icon = Icons.Default.Lock, title = "Privacidade e Senha", subtitle = "Altere sua senha de acesso") {}
-        PerfilOpcao(icon = Icons.Default.Notifications, title = "Notificações", subtitle = "Gerencie seus alertas de treino") {}
+        PerfilOpcao(Icons.Default.Person, "Meus Dados", "Edite suas informações pessoais") {}
+        PerfilOpcao(Icons.Default.Lock, "Privacidade e Senha", "Altere sua senha de acesso") {}
+        PerfilOpcao(Icons.Default.Notifications, "Notificações", "Gerencie seus alertas de treino") {}
 
-        Spacer(modifier = Modifier.weight(1f)) // Empurra o botão pro fundo da tela
+        Spacer(modifier = Modifier.weight(1f))
 
-        // --- BOTÃO DE LOGOUT ---
         Button(
             onClick = { onLogout() },
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            colors = ButtonDefaults.buttonColors(containerColor = colors.errorContainer),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
-            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair", tint = MaterialTheme.colorScheme.onErrorContainer)
+            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair", tint = colors.onErrorContainer)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Sair do Aplicativo", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
+            Text("Sair do Aplicativo", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onErrorContainer)
         }
 
-        Spacer(modifier = Modifier.height(80.dp)) // Espaço da BottomBar
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
@@ -85,7 +108,9 @@ fun PerfilOpcao(icon: ImageVector, title: String, subtitle: String, onClick: () 
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)),
+            modifier = Modifier
+                .size(48.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)

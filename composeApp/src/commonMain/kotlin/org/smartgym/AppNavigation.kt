@@ -87,6 +87,7 @@ import org.smartgym.repository.ApiFichaTreinoRepository
 import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
 import org.smartgym.viewModel.Adm.ProfessoresViewModel
+import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -495,7 +496,8 @@ fun NavContent(
     val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
     val fichasViewModel = remember { FichasViewModel(fichaRepository, alunoRepository) }
     val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }
-    val professoresViewModel = remember { ProfessoresViewModel() }
+    val professoresViewModel = remember { ProfessoresViewModel()}
+    val alunoPerfilViewModel = remember { AlunoPerfilViewModel() }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
@@ -526,19 +528,9 @@ fun NavContent(
         modifier = modifier
     ) {
         composable(Screen.HomeAluno.route) {
-            val usuarioLogado = UserHomeData(
-                "Leandro",
-                "TREINO A",
-                "Peito e Tríceps",
-                5,
-                12,
-                4,
-                "Rafael Silva",
-                4.9,
-                "15/04/2026",
-                "R$ 149,90"
-            )
-            HomeScreen(navController = navController, userData = usuarioLogado)
+            HomeScreen(
+                navController = navController,
+                viewModel = alunoPerfilViewModel)
         }
         composable(Screen.Aparelhos.route) {
             AparelhosScreen(
@@ -550,7 +542,7 @@ fun NavContent(
         composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
 
         composable(Screen.PerfilAluno.route) {
-            PerfilAlunoScreen(navController = navController, onLogout = onLogout)
+            PerfilAlunoScreen(navController = navController, viewModel = alunoPerfilViewModel, onLogout = onLogout)
         }
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
@@ -590,7 +582,7 @@ fun NavContent(
             CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel)
         }
 
-// ────────────────────────────────────────────────────
+        // ────────────────────────────────────────────────────
         // ADMIN
         // ────────────────────────────────────────────────────
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
