@@ -16,22 +16,35 @@ class UnidadesViewModel : ViewModel() {
     private val _listaUnidades = MutableStateFlow<List<Unidade>>(emptyList())
     val listaUnidades: StateFlow<List<Unidade>> = _listaUnidades.asStateFlow()
 
-    val idAtual = MutableStateFlow<Int?>(null) // Mudamos para Int?
+    val idAtual = MutableStateFlow<Int?>(null)
     val nomeAtual = MutableStateFlow("")
     val enderecoAtual = MutableStateFlow("")
     val cidadeAtual = MutableStateFlow("")
 
     val mostrandoFormulario = MutableStateFlow(false)
 
+    // Contagens visuais simuladas por nome de unidade
+    private val contagensSimuladas = mapOf(
+        "Unidade Centro"     to Pair(142, 8),
+        "Unidade Zona Sul"   to Pair(98,  5),
+        "Unidade Zona Oeste" to Pair(80, 6)
+    )
+
     init {
         carregar()
     }
 
-    // Busca da API real
     fun carregar() {
         viewModelScope.launch {
             try {
-                _listaUnidades.value = repository.buscarTodas()
+                val unidades = repository.buscarTodas()
+                // Injeta contagens visuais com base no nome;
+                // se não encontrar no mapa, usa valores padrão
+                _listaUnidades.value = unidades.mapIndexed { index, unidade ->
+                    val (alunos, instrutores) = contagensSimuladas[unidade.nome]
+                        ?: Pair(80 + index * 15, 4 + index)
+                    unidade.copy(alunos = alunos, instrutores = instrutores)
+                }
             } catch (e: Exception) {
                 println("Erro ao carregar unidades: ${e.message}")
             }
@@ -45,7 +58,6 @@ class UnidadesViewModel : ViewModel() {
         cidadeAtual.value = ""
     }
 
-    // Salva na API real
     fun gravar() {
         viewModelScope.launch {
             try {
@@ -58,7 +70,7 @@ class UnidadesViewModel : ViewModel() {
                 repository.salvar(unidade)
                 limparCampos()
                 mostrandoFormulario.value = false
-                carregar() // Atualiza a tela puxando do banco novamente
+                carregar()
             } catch (e: Exception) {
                 println("Erro ao gravar unidade: ${e.message}")
             }
@@ -73,12 +85,11 @@ class UnidadesViewModel : ViewModel() {
         mostrandoFormulario.value = true
     }
 
-    // Apaga na API real
     fun apagar(idParaApagar: Int) {
         viewModelScope.launch {
             try {
                 repository.apagar(idParaApagar)
-                carregar() // Atualiza a tela
+                carregar()
             } catch (e: Exception) {
                 println("Erro ao apagar unidade: ${e.message}")
             }

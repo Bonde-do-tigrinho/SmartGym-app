@@ -31,4 +31,10 @@ sealed class Screen(val route: String){
     object NovoProfessor : Screen("novo_professor")
     object EditarProfessor : Screen("editar_professor")
 
+    object Notificacoes : Screen("notificacoes")
+    object NovaNotificacao : Screen("nova_notificacao")
+    object EditarNotificacao : Screen("editar_notificacao/{id}") {
+        fun createRoute(id: Int) = "editar_notificacao/$id"
+    }
+
 }

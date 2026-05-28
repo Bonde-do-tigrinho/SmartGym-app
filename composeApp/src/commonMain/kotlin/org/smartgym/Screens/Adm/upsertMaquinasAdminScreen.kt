@@ -36,7 +36,7 @@ fun FormularioMaquinaScreen(
     var expanded by remember { mutableStateOf(false) }
 
     // Lista exata de como a API espera
-    val statusOptions = listOf("LIVRE", "OCUPADA", "MANUTENCAO")
+    val statusOptions = listOf("LIVRE", "OCUPADA", "MANUTENÇÃO")
     val isEditando = maquinaInicial != null
 
     Column(
