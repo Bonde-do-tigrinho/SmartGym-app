@@ -226,7 +226,7 @@ fun ProfessorRow(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Deletar",
-                    tint = Color.Red,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(18.dp)
                 )
             }
