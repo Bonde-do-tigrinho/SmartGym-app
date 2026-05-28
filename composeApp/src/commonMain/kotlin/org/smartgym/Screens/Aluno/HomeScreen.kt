@@ -1,5 +1,6 @@
 package org.smartgym.Screens.Aluno
 
+import MaquinaViewModel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,12 +23,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import org.smartgym.UserHomeData
 import org.smartgym.components.InfoCard
+import org.smartgym.viewModel.aluno.TreinoViewModel
 
 @Composable
-fun HomeScreen(navController: NavController, userData: UserHomeData) {
+fun HomeScreen(
+    navController: NavController,
+    maquinaViewModel: MaquinaViewModel, // Atualizado para usar a sua MaquinaViewModel real
+    treinoViewModel: TreinoViewModel,
+    nomeAluno: String
+) {
     val colors = MaterialTheme.colorScheme
+
+    val listaDeMaquinas by maquinaViewModel.maquinas.collectAsState()
+    val aparelhosLivres = listaDeMaquinas.count { it.status.uppercase() == "LIVRE" }
+    val pessoasEmUso = listaDeMaquinas.size - aparelhosLivres
+
+    // Dispara a busca das máquinas ao abrir a Home
+    LaunchedEffect(Unit) {
+        maquinaViewModel.carregarMaquinas()
+    }
+
+    // 2. DADOS TEMPORÁRIOS: Fixos até alinhar os detalhes de Treino e Plano com a equipe
+    val treinoAtual = "TREINO A"
+    val focoTreino = "Peito e Tríceps"
+    val qtdExercicios = 5
+    val professorNome = "Rafael Silva"
+    val professorNota = "4.9"
+    val planoVencimento = "15/04/2026"
+    val planoValor = "R$ 149,90"
 
     Column(
         modifier = Modifier
@@ -41,7 +68,7 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
             Column {
                 Text("Boa tarde,", color = colors.onSurfaceVariant, fontSize = 16.sp)
                 Text(
-                    userData.userName.uppercase(),
+                    nomeAluno.uppercase(),
                     color = colors.onBackground,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold
@@ -75,13 +102,13 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        userData.treinoAtual,
+                        treinoAtual,
                         color = colors.onSurface,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(userData.focoTreino, color = colors.onSurfaceVariant)
-                    Text("${userData.qtdExercicios} exercícios", color = colors.onSurfaceVariant)
+                    Text(focoTreino, color = colors.onSurfaceVariant)
+                    Text("$qtdExercicios exercícios", color = colors.onSurfaceVariant)
                 }
                 Box(
                     modifier = Modifier
@@ -90,7 +117,7 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        userData.treinoAtual.last().toString(),
+                        treinoAtual.last().toString(),
                         color = colors.onPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 24.sp
@@ -101,16 +128,16 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Cards de Aparelhos e Pessoas
+        // Cards de Aparelhos e Pessoas (DADOS REAIS DA API)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
-                .clickable { /* TODO: navController.navigate("aparelhos") */ }
+                .clickable { navController.navigate("aparelhos") }
             ) {
                 InfoCard(
                     icon = Icons.Default.Bolt,
-                    value = userData.aparelhosLivres.toString(),
+                    value = aparelhosLivres.toString(),
                     label = "Aparelhos livres",
                     iconColor = colors.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -123,7 +150,7 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
             ) {
                 InfoCard(
                     icon = Icons.Default.Groups,
-                    value = userData.pessoasEmUso.toString(),
+                    value = pessoasEmUso.toString(),
                     label = "Em uso agora",
                     iconColor = colors.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -148,7 +175,7 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* TODO: navController.navigate("professor_detalhe/${userData.professorId}") */ },
+                .clickable { /* TODO: navController.navigate("professor_detalhe") */ },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -163,19 +190,19 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        userData.professorNome.split(" ").map { it.first() }.joinToString(""),
+                        professorNome.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").take(2),
                         color = colors.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(userData.professorNome, color = colors.onSurface, fontWeight = FontWeight.Bold)
+                    Text(professorNome, color = colors.onSurface, fontWeight = FontWeight.Bold)
                     Text("Musculação", color = colors.onSurfaceVariant, fontSize = 14.sp)
                     Text("Seg-Sáb 08h-14h", color = colors.onSurfaceVariant, fontSize = 12.sp)
                 }
                 Icon(Icons.Default.Star, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
-                Text(" ${userData.professorNota}", color = colors.onSurface, fontWeight = FontWeight.Bold)
+                Text(" $professorNota", color = colors.onSurface, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -185,7 +212,7 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* TODO: navController.navigate("pagamentos") */ },
+                .clickable { navController.navigate("pagamentos") },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.3f)),
             shape = RoundedCornerShape(16.dp)
@@ -204,12 +231,12 @@ fun HomeScreen(navController: NavController, userData: UserHomeData) {
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("Plano Premium", color = colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("Vence em ${userData.planoVencimento}", color = colors.onSurfaceVariant, fontSize = 12.sp)
+                        Text("Vence em $planoVencimento", color = colors.onSurfaceVariant, fontSize = 12.sp)
                     }
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    userData.planoValor,
+                    planoValor,
                     color = colors.primary,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 20.sp
