@@ -28,7 +28,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 class AlunosViewModel : ViewModel() {
 
     private val client = ApiClient.client
-    private val basePaths = listOf("/api/alunos", "/alunos", "/api/aluno", "/aluno")
+
+    private val basePaths = listOf("/api/alunos")
+
     private val _alunos = MutableStateFlow<List<Usuario>>(emptyList())
     val alunos: StateFlow<List<Usuario>> = _alunos.asStateFlow()
 
@@ -52,9 +54,7 @@ class AlunosViewModel : ViewModel() {
     private val _navigationEvent = MutableSharedFlow<Unit>()
     val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
-    init{
-        carregarAlunos()
-    }
+    // BLOCO INIT REMOVIDO DAQUI! 🚀
 
     private fun url(basePath: String, path: String = "") = ApiClient.getUrl("$basePath$path")
 

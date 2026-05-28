@@ -50,9 +50,7 @@ class ProfessoresViewModel : ViewModel() {
     private val _navigationEvent = MutableSharedFlow<Unit>()
     val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
-    init {
-        carregarProfessores()
-    }
+    // BLOCO INIT REMOVIDO DAQUI! 🚀
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query

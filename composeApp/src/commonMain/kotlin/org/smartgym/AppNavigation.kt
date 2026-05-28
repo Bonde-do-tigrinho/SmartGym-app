@@ -12,18 +12,22 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.SupervisorAccount
 import androidx.compose.material.icons.rounded.Assignment
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider // <-- NOVO IMPORT
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,12 +84,22 @@ import org.smartgym.Screens.Adm.MaquinasIotAdminScreen
 import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Adm.NovoProfessorScreen
 import org.smartgym.Screens.Adm.ProfessoresAdminScreen
+import org.smartgym.Screens.Aluno.AulasAlunoScreen
+import org.smartgym.Screens.Professor.AulasProfessorScreen
+import org.smartgym.Screens.Professor.UpsertAulaScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
 import org.smartgym.repository.ApiFichaTreinoRepository
 import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
 import org.smartgym.viewModel.Adm.ProfessoresViewModel
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.material3.SnackbarHostState
+
+// 👇 1. MOVIDO PARA FORA: A "tomada" do Snackbar agora é global para todo o projeto!
+val LocalSnackbar = compositionLocalOf<SnackbarHostState> {
+    error("Nenhum SnackbarHostState fornecido")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +112,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         Screen.HomeAluno.route,
         Screen.Aparelhos.route,
         Screen.Treino.route,
+        Screen.AulasAluno.route,
         Screen.Pagamentos.route,
         Screen.PerfilAluno.route
     )
@@ -108,6 +123,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         Screen.HomeAluno,
         Screen.Aparelhos,
         Screen.Treino,
+        Screen.AulasAluno,
         Screen.Pagamentos,
         Screen.PerfilAluno
     )
@@ -116,6 +132,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         Screen.HomeAluno.route to "Home",
         Screen.Aparelhos.route to "Aparelhos",
         Screen.Treino.route to "Treino",
+        Screen.AulasAluno.route to "Aulas",
         Screen.Pagamentos.route to "Pagamento",
         Screen.PerfilAluno.route to "Perfil"
     )
@@ -124,171 +141,18 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
         Screen.HomeAluno.route to Icons.Rounded.Home,
         Screen.Aparelhos.route to Icons.Rounded.FitnessCenter,
         Screen.Treino.route to Icons.Rounded.Assignment,
+        Screen.AulasAluno.route to Icons.Rounded.DateRange,
         Screen.Pagamentos.route to Icons.Rounded.Payment,
         Screen.PerfilAluno.route to Icons.Rounded.Person
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    when (userRole) {
-        UserRole.ALUNO -> {
-            Scaffold(
-                snackbarHost = {
-                    SnackbarHost(hostState = snackbarHostState) { data ->
-                        Snackbar(
-                            snackbarData = data,
-                            containerColor = Color(0xFF1A1A1A),
-                            contentColor = Color(0xFFD9FF00),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.background,
-                bottomBar = {
-                    if (mostrarBottomNav) {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 0.dp
-                        ) {
-                            items.forEach { screen ->
-                                val selected = currentRoute == screen.route
-                                NavigationBarItem(
-                                    selected = selected,
-                                    onClick = {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(Screen.HomeAluno.route) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    icon = {
-                                        Icon(
-                                            icons[screen.route] ?: Icons.Default.Home,
-                                            contentDescription = null,
-                                            tint = if (selected) MaterialTheme.colorScheme.primary else TextGray
-                                        )
-                                    },
-                                    label = {
-                                        Text(
-                                            labels[screen.route] ?: "",
-                                            color = if (selected) MaterialTheme.colorScheme.primary else TextGray
-                                        )
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        indicatorColor = Color.Transparent
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-            ) { padding ->
-                NavContent(
-                    navController = navController,
-                    userRole = userRole,
-                    onLogout = onLogout,
-                    modifier = Modifier.padding(padding),
-                    snackbarHostState = snackbarHostState
-
-                )
-            }
-        }
-
-        UserRole.PROFESSOR -> {
-            val drawerState = rememberDrawerState(DrawerValue.Closed)
-            val scope = rememberCoroutineScope()
-            val professorItems = listOf(
-                Screen.HomeProfessor,
-                Screen.Exercicios,
-                Screen.Fichas,
-                Screen.Avaliacoes
-            )
-            val professorRotasSemHeader = setOf(
-                Screen.NovoExercicio.route,
-                Screen.NovaAvaliacao.route,
-                Screen.NovaFicha.route,
-                Screen.EditarFicha.route
-            )
-            val mostrarHeaderProfessor = currentRoute !in professorRotasSemHeader
-            val professorLabels = mapOf(
-                Screen.HomeProfessor.route to "Dashboard",
-                Screen.Exercicios.route to "Exercícios",
-                Screen.Fichas.route to "Fichas",
-                Screen.Avaliacoes.route to "Avaliações"
-            )
-
-            val professorIcons = mapOf(
-                Screen.HomeProfessor.route to Icons.Outlined.Home,
-                Screen.Exercicios.route to Icons.Rounded.FitnessCenter,
-                Screen.Fichas.route to Icons.Rounded.Assignment,
-                Screen.Avaliacoes.route to Icons.Outlined.People
-            )
-
-            ModalNavigationDrawer(
-                gesturesEnabled = mostrarHeaderProfessor,
-                drawerState = drawerState,
-                drawerContent = {
-                    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
-                        Spacer(Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                            Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                        }
-                        Text("Área do Instrutor", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                        Spacer(Modifier.height(8.dp))
-
-                        professorItems.forEach { screen ->
-                            val selected = currentRoute == screen.route
-                            NavigationDrawerItem(
-                                shape = RoundedCornerShape(15.dp),
-                                label = { Text(professorLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
-                                icon = { Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null) },
-                                selected = selected,
-                                onClick = {
-                                    navController.navigate(screen.route) { launchSingleTop = true }
-                                    scope.launch { drawerState.close() }
-                                },
-                                modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
-                                colors = NavigationDrawerItemDefaults.colors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = Color.Black,
-                                    selectedIconColor = Color.Black,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                        Spacer(Modifier.height(8.dp))
-
-                        NavigationDrawerItem(
-                            shape = RoundedCornerShape(15.dp),
-                            label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                            icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
-                            selected = false,
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                onLogout()
-                            },
-                            modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
-                            colors = NavigationDrawerItemDefaults.colors(
-                                unselectedTextColor = MaterialTheme.colorScheme.error,
-                                unselectedIconColor = MaterialTheme.colorScheme.error
-                            )
-                        )
-                    }
-                }
-            ) {
+    // 👇 2. A MÁGICA AQUI: O 'CompositionLocalProvider' envolve TUDO!
+    CompositionLocalProvider(LocalSnackbar provides snackbarHostState) {
+        when (userRole) {
+            UserRole.ALUNO -> {
                 Scaffold(
-                    containerColor = MaterialTheme.colorScheme.background,
                     snackbarHost = {
                         SnackbarHost(hostState = snackbarHostState) { data ->
                             Snackbar(
@@ -299,23 +163,166 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             )
                         }
                     },
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                    Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                    containerColor = MaterialTheme.colorScheme.background,
+                    bottomBar = {
+                        if (mostrarBottomNav) {
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 0.dp
+                            ) {
+                                items.forEach { screen ->
+                                    val selected = currentRoute == screen.route
+                                    NavigationBarItem(
+                                        selected = selected,
+                                        onClick = {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(Screen.HomeAluno.route) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        },
+                                        icon = {
+                                            Icon(
+                                                icons[screen.route] ?: Icons.Default.Home,
+                                                contentDescription = null,
+                                                tint = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                            )
+                                        },
+                                        label = {
+                                            Text(
+                                                labels[screen.route] ?: "",
+                                                color = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                            )
+                                        },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            indicatorColor = Color.Transparent
+                                        )
+                                    )
                                 }
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-                            modifier = Modifier.shadow(elevation = 5.dp)
-                        )
-                        if (mostrarHeaderProfessor) {
+                            }
+                        }
+                    }
+                ) { padding ->
+                    NavContent(
+                        navController = navController,
+                        userRole = userRole,
+                        onLogout = onLogout,
+                        modifier = Modifier.padding(padding),
+                        snackbarHostState = snackbarHostState
+                    )
+                }
+            }
+
+            UserRole.PROFESSOR -> {
+                val drawerState = rememberDrawerState(DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+                val professorItems = listOf(
+                    Screen.HomeProfessor,
+                    Screen.Exercicios,
+                    Screen.Fichas,
+                    Screen.Avaliacoes,
+                    Screen.AulasProfessor
+                )
+                val professorRotasSemHeader = setOf(
+                    Screen.NovoExercicio.route,
+                    Screen.NovaAvaliacao.route,
+                    Screen.NovaFicha.route,
+                    Screen.EditarFicha.route,
+                    Screen.UpsertAulaProfessor.route
+                )
+                val mostrarHeaderProfessor = currentRoute !in professorRotasSemHeader
+                val professorLabels = mapOf(
+                    Screen.HomeProfessor.route to "Dashboard",
+                    Screen.Exercicios.route to "Exercícios",
+                    Screen.Fichas.route to "Fichas",
+                    Screen.Avaliacoes.route to "Avaliações",
+                    Screen.AulasProfessor.route to "Aulas"
+                )
+
+                val professorIcons = mapOf(
+                    Screen.HomeProfessor.route to Icons.Outlined.Home,
+                    Screen.Exercicios.route to Icons.Rounded.FitnessCenter,
+                    Screen.Fichas.route to Icons.Rounded.Assignment,
+                    Screen.Avaliacoes.route to Icons.Outlined.People,
+                    Screen.AulasProfessor.route to Icons.Outlined.Event
+                )
+
+                ModalNavigationDrawer(
+                    gesturesEnabled = mostrarHeaderProfessor,
+                    drawerState = drawerState,
+                    drawerContent = {
+                        ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
+                            Spacer(Modifier.height(24.dp))
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            }
+                            Text("Área do Instrutor", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                            Spacer(Modifier.height(8.dp))
+
+                            professorItems.forEach { screen ->
+                                val selected = currentRoute == screen.route
+                                NavigationDrawerItem(
+                                    shape = RoundedCornerShape(15.dp),
+                                    label = { Text(professorLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                    icon = { Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null) },
+                                    selected = selected,
+                                    onClick = {
+                                        navController.navigate(screen.route) { launchSingleTop = true }
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
+                                    colors = NavigationDrawerItemDefaults.colors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = Color.Black,
+                                        selectedIconColor = Color.Black,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+
+                            Spacer(Modifier.height(16.dp))
+                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                            Spacer(Modifier.height(8.dp))
+
+                            NavigationDrawerItem(
+                                shape = RoundedCornerShape(15.dp),
+                                label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
+                                icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
+                                selected = false,
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    onLogout()
+                                },
+                                modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    unselectedTextColor = MaterialTheme.colorScheme.error,
+                                    unselectedIconColor = MaterialTheme.colorScheme.error
+                                )
+                            )
+                        }
+                    }
+                ) {
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        snackbarHost = {
+                            SnackbarHost(hostState = snackbarHostState) { data ->
+                                Snackbar(
+                                    snackbarData = data,
+                                    containerColor = Color(0xFF1A1A1A),
+                                    contentColor = Color(0xFFD9FF00),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        },
+                        topBar = {
                             TopAppBar(
                                 title = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -331,141 +338,158 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                                 modifier = Modifier.shadow(elevation = 5.dp)
                             )
+                            if (mostrarHeaderProfessor) {
+                                TopAppBar(
+                                    title = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                            Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    },
+                                    navigationIcon = {
+                                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    modifier = Modifier.shadow(elevation = 5.dp)
+                                )
+                            }
                         }
+                    ) { padding ->
+                        NavContent(
+                            navController = navController,
+                            userRole = userRole,
+                            onLogout = onLogout,
+                            modifier = Modifier.padding(padding),
+                            snackbarHostState = snackbarHostState
+                        )
                     }
-                ) { padding ->
-                    NavContent(
-                        navController = navController,
-                        userRole = userRole,
-                        onLogout = onLogout,
-                        modifier = Modifier.padding(padding),
-                        snackbarHostState = snackbarHostState
-                    )
                 }
             }
-        }
 
-        UserRole.ADMIN -> {
-            val drawerState = rememberDrawerState(DrawerValue.Closed)
-            val scope = rememberCoroutineScope()
+            UserRole.ADMIN -> {
+                val drawerState = rememberDrawerState(DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
 
-            val adminItems = listOf(
-                Screen.HomeAdmin.route,
-                Screen.AlunosAdmin.route,
-                Screen.ProfessoresAdmin.route,
-                Screen.UnidadesAdmin.route,
-                "telaPlanos",
-                Screen.MaquinasAdmin.route,
-                Screen.MaquinasIotAdmin.route,
-            )
+                val adminItems = listOf(
+                    Screen.HomeAdmin.route,
+                    Screen.AlunosAdmin.route,
+                    Screen.ProfessoresAdmin.route,
+                    Screen.UnidadesAdmin.route,
+                    "telaPlanos",
+                    Screen.MaquinasAdmin.route,
+                    Screen.MaquinasIotAdmin.route,
+                )
 
-            val adminLabels = mapOf(
-                Screen.HomeAdmin.route to "Dashboard",
-                Screen.AlunosAdmin.route to "Alunos",
-                Screen.UnidadesAdmin.route to "Unidades",
-                "telaPlanos" to "Planos",
-                Screen.MaquinasAdmin.route to "Máquinas",
-                Screen.MaquinasIotAdmin.route to "Máquinas IOTs",
-                Screen.ProfessoresAdmin.route to "Professores",
-            )
+                val adminLabels = mapOf(
+                    Screen.HomeAdmin.route to "Dashboard",
+                    Screen.AlunosAdmin.route to "Alunos",
+                    Screen.UnidadesAdmin.route to "Unidades",
+                    "telaPlanos" to "Planos",
+                    Screen.MaquinasAdmin.route to "Máquinas",
+                    Screen.MaquinasIotAdmin.route to "Máquinas IOTs",
+                    Screen.ProfessoresAdmin.route to "Professores",
+                )
 
-            val adminIcons = mapOf(
-                Screen.HomeAdmin.route to Icons.Outlined.Home,
-                Screen.AlunosAdmin.route to Icons.Outlined.People,
-                Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
-                "telaPlanos" to Icons.Rounded.Assignment,
-                Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
-                Screen.MaquinasIotAdmin.route to Icons.Outlined.Sensors,
-                Screen.ProfessoresAdmin.route to Icons.Outlined.SupervisorAccount,
-            )
+                val adminIcons = mapOf(
+                    Screen.HomeAdmin.route to Icons.Outlined.Home,
+                    Screen.AlunosAdmin.route to Icons.Outlined.People,
+                    Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
+                    "telaPlanos" to Icons.Rounded.Assignment,
+                    Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
+                    Screen.MaquinasIotAdmin.route to Icons.Outlined.Sensors,
+                    Screen.ProfessoresAdmin.route to Icons.Outlined.SupervisorAccount,
+                )
 
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
-                        Spacer(Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                            Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                        }
-                        Text("Área do Gerente", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                        Spacer(Modifier.height(8.dp))
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
+                            Spacer(Modifier.height(24.dp))
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            }
+                            Text("Área do Gerente", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                            Spacer(Modifier.height(8.dp))
 
-                        adminItems.forEach { rota ->
-                            val selected = currentRoute == rota
+                            adminItems.forEach { rota ->
+                                val selected = currentRoute == rota
+                                NavigationDrawerItem(
+                                    shape = RoundedCornerShape(15.dp),
+                                    label = { Text(adminLabels[rota] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                    icon = { Icon(adminIcons[rota] ?: Icons.Default.Home, contentDescription = null) },
+                                    selected = selected,
+                                    onClick = {
+                                        navController.navigate(rota) { launchSingleTop = true }
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
+                                    colors = NavigationDrawerItemDefaults.colors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = Color.Black,
+                                        selectedIconColor = Color.Black,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+                            Spacer(Modifier.height(16.dp))
+
+                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+
+                            Spacer(Modifier.height(8.dp))
+
                             NavigationDrawerItem(
-                                shape = RoundedCornerShape(15.dp),
-                                label = { Text(adminLabels[rota] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
-                                icon = { Icon(adminIcons[rota] ?: Icons.Default.Home, contentDescription = null) },
-                                selected = selected,
+                                label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
+                                icon = { Icon(Icons.Default.Menu, contentDescription = null) }, // pode trocar por logout depois
+                                selected = false,
                                 onClick = {
-                                    navController.navigate(rota) { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
+                                    onLogout()
                                 },
                                 modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
                                 colors = NavigationDrawerItemDefaults.colors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = Color.Black,
-                                    selectedIconColor = Color.Black,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface
+                                    unselectedTextColor = MaterialTheme.colorScheme.error,
+                                    unselectedIconColor = MaterialTheme.colorScheme.error
                                 )
                             )
                         }
-                        Spacer(Modifier.height(16.dp))
-
-                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-
-                        Spacer(Modifier.height(8.dp))
-
-                        NavigationDrawerItem(
-                            label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                            icon = { Icon(Icons.Default.Menu, contentDescription = null) }, // pode trocar por logout depois
-                            selected = false,
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                onLogout()
-                            },
-                            modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
-                            colors = NavigationDrawerItemDefaults.colors(
-                                unselectedTextColor = MaterialTheme.colorScheme.error,
-                                unselectedIconColor = MaterialTheme.colorScheme.error
-                            )
-                        )
                     }
-                }
-            ) {
-                Scaffold(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState) { data ->
-                            Snackbar(
-                                snackbarData = data,
-                                containerColor = Color(0xFF1A1A1A),
-                                contentColor = Color(0xFFD9FF00),
-                                shape = RoundedCornerShape(12.dp)
+                ) {
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        snackbarHost = {
+                            SnackbarHost(hostState = snackbarHostState) { data ->
+                                Snackbar(
+                                    snackbarData = data,
+                                    containerColor = Color(0xFF1A1A1A),
+                                    contentColor = Color(0xFFD9FF00),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        },
+                        topBar = {
+                            TopAppBar(
+                                title = {
+                                    Row(modifier = Modifier.padding(horizontal = 0.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
+                                        Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                    }
+                                },
+                                navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
+                                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                                modifier = Modifier.shadow(elevation = 5.dp)
                             )
                         }
-                    },
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Row(modifier = Modifier.padding(horizontal = 0.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                    Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                                }
-                            },
-                            navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-                            modifier = Modifier.shadow(elevation = 5.dp)
-                        )
+                    ) { padding ->
+                        NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding), snackbarHostState = snackbarHostState)
                     }
-                ) { padding ->
-                    NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding), snackbarHostState = snackbarHostState)
                 }
             }
         }
@@ -496,6 +520,8 @@ fun NavContent(
     val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }
     val professoresViewModel = remember { ProfessoresViewModel() }
 
+    // Opcional: Como agora o Snackbar é global, você pode remover essas escutas centralizadas daqui
+    // e deixar que cada tela chame o LocalSnackbar.current caso queira deixar esse arquivo mais enxuto no futuro.
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
             println("SNACKBAR: $message")
@@ -525,19 +551,11 @@ fun NavContent(
         modifier = modifier
     ) {
         composable(Screen.HomeAluno.route) {
-            val usuarioLogado = UserHomeData(
-                "Leandro",
-                "TREINO A",
-                "Peito e Tríceps",
-                5,
-                12,
-                4,
-                "Rafael Silva",
-                4.9,
-                "15/04/2026",
-                "R$ 149,90"
-            )
-            HomeScreen(navController = navController, userData = usuarioLogado)
+            HomeScreen(
+                navController = navController,
+                maquinaViewModel = maquinaViewModel,
+                treinoViewModel = treinoViewModel,
+                nomeAluno = "Nicolas")
         }
         composable(Screen.Aparelhos.route) {
             AparelhosScreen(
@@ -550,6 +568,10 @@ fun NavContent(
 
         composable(Screen.PerfilAluno.route) {
             PerfilAlunoScreen(navController = navController, onLogout = onLogout)
+        }
+        composable(Screen.AulasAluno.route) {
+
+            AulasAlunoScreen(navController = navController, alunoIdLogado = 5L)
         }
 
         composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
@@ -587,6 +609,12 @@ fun NavContent(
         }
         composable(Screen.NovaAvaliacao.route) {
             CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel)
+        }
+        composable(Screen.AulasProfessor.route) {
+            AulasProfessorScreen(navController = navController)
+        }
+        composable(Screen.UpsertAulaProfessor.route) {
+            UpsertAulaScreen(navController = navController)
         }
 
 // ────────────────────────────────────────────────────
@@ -661,4 +689,3 @@ fun NavContent(
         }
     }
 }
-
