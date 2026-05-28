@@ -8,6 +8,7 @@ sealed class Screen(val route: String){
     object Treino: Screen("treino")
     object Pagamentos: Screen("pagamentos")
     object PerfilAluno : Screen("perfil_aluno")
+    object AulasAluno : Screen("aulas_aluno")
 
     object CompletarPerfil : Screen("completar_perfil")
 
@@ -20,6 +21,8 @@ sealed class Screen(val route: String){
     object EditarFicha : Screen("editar_ficha")
     object Avaliacoes : Screen("avaliacoes")
     object NovaAvaliacao : Screen("nova_avaliacao")
+    object AulasProfessor : Screen("aulas_professor")
+    object UpsertAulaProfessor : Screen("upsert_aula_professor")
 
     //Rotas do admin
     object HomeAdmin: Screen("home_admin")
@@ -32,5 +35,11 @@ sealed class Screen(val route: String){
     object ProfessoresAdmin : Screen("professores_admin")
     object NovoProfessor : Screen("novo_professor")
     object EditarProfessor : Screen("editar_professor")
+
+    object Notificacoes : Screen("notificacoes")
+    object NovaNotificacao : Screen("nova_notificacao")
+    object EditarNotificacao : Screen("editar_notificacao/{id}") {
+        fun createRoute(id: Int) = "editar_notificacao/$id"
+    }
 
 }

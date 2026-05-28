@@ -10,7 +10,7 @@ class ApiUnidadeRepository {
     private val client = ApiClient.client
 
     // Aponta para o endpoint que criamos no Spring
-    private fun url(path: String = "") = ApiClient.getUrl("/unidades$path")
+    private fun url(path: String = "") = ApiClient.getUrl("/api/unidades$path")
 
     suspend fun buscarTodas(): List<Unidade> = client.get(url()).body()
 

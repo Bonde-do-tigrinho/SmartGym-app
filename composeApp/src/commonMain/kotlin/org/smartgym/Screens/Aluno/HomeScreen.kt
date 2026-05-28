@@ -1,5 +1,6 @@
 package org.smartgym.Screens.Aluno
 
+import MaquinaViewModel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,18 +25,38 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.smartgym.components.InfoCard
 import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
+import org.smartgym.viewModel.aluno.TreinoViewModel
 
 @Composable
-fun HomeScreen(navController: NavController, viewModel: AlunoPerfilViewModel) {
-    val perfil by viewModel.perfil.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+fun HomeScreen(
+    navController: NavController,
+    maquinaViewModel: MaquinaViewModel,
+    treinoViewModel: TreinoViewModel,
+    viewModel: AlunoPerfilViewModel
+    nomeAluno: String
+) {
     val colors = MaterialTheme.colorScheme
+
+    val listaDeMaquinas by maquinaViewModel.maquinas.collectAsState()
+    val aparelhosLivres = listaDeMaquinas.count { it.status.uppercase() == "LIVRE" }
+    val pessoasEmUso = listaDeMaquinas.size - aparelhosLivres
+    val treinoAtual = "TREINO A"
+    val focoTreino = "Peito e Tríceps"
+    val qtdExercicios = 5
+    val professorNome = "Rafael Silva"
+    val professorNota = "4.9"
+    val planoVencimento = "15/04/2026"
+    val planoValor = "R$ 149,90"
 
     if (isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = colors.primary)
         }
         return
+    }
+
+        LaunchedEffect(Unit) {
+        maquinaViewModel.carregarMaquinas()
     }
 
     LaunchedEffect(Unit){
@@ -127,12 +148,16 @@ fun HomeScreen(navController: NavController, viewModel: AlunoPerfilViewModel) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Cards de Info
+        // Cards de Aparelhos e Pessoas (DADOS REAIS DA API)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).clickable { /* TODO */ }) {
+            Box(modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { navController.navigate("aparelhos") }
+            ) {
                 InfoCard(
                     icon = Icons.Default.Bolt,
-                    value = "-",
+                    value = aparelhosLivres.toString(),
                     label = "Aparelhos livres",
                     iconColor = colors.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -141,7 +166,7 @@ fun HomeScreen(navController: NavController, viewModel: AlunoPerfilViewModel) {
             Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).clickable { /* TODO */ }) {
                 InfoCard(
                     icon = Icons.Default.Groups,
-                    value = "-",
+                    value = pessoasEmUso.toString(),
                     label = "Em uso agora",
                     iconColor = colors.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -213,7 +238,7 @@ fun HomeScreen(navController: NavController, viewModel: AlunoPerfilViewModel) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* TODO */ },
+                .clickable { navController.navigate("pagamentos") },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.3f)),
             shape = RoundedCornerShape(16.dp)
