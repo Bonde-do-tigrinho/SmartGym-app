@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
@@ -17,16 +18,19 @@ import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.SupervisorAccount
-import androidx.compose.material.icons.rounded.Assignment
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -35,15 +39,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import androidx.savedstate.SavedState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
@@ -69,11 +69,6 @@ import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
 import org.smartgym.viewModel.Professor.FichasViewModel
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.ContentType.Application.Json
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
 import org.smartgym.Screens.Adm.EditarProfessorScreen
 import org.smartgym.Screens.Adm.MaquinasAdminScreen
 import org.smartgym.Screens.Adm.MaquinasIotAdminScreen
@@ -83,19 +78,34 @@ import org.smartgym.Screens.Adm.ProfessoresAdminScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
 import org.smartgym.repository.ApiFichaTreinoRepository
-import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
 import org.smartgym.viewModel.Adm.ProfessoresViewModel
+import org.smartgym.Screens.Adm.NotificacoesScreen
+import org.smartgym.Screens.Adm.FormularioNotificacaoScreen
+import org.smartgym.viewModel.Adm.NotificacoesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
+    // 1. Instancia do ViewModel no topo para o menu saber dos avisos
+    val notificacoesViewModel = remember { NotificacoesViewModel() }
+    val listaNotificacoes by notificacoesViewModel.notificacoes.collectAsState()
+
+    // 2. Carrega as notificações ao abrir o App
+    LaunchedEffect(Unit) {
+        notificacoesViewModel.carregarNotificacoes()
+    }
+
+    // 3. Verifica se existe pelo menos uma notificação considerada "Nova"
+    val temAvisoNovo = listaNotificacoes.any { notificacoesViewModel.ehNotificacaoNova(it) }
+
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     val rotasComBottomNav = listOf(
         Screen.HomeAluno.route,
+        Screen.Notificacoes.route,
         Screen.Aparelhos.route,
         Screen.Treino.route,
         Screen.Pagamentos.route,
@@ -106,6 +116,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val items = listOf(
         Screen.HomeAluno,
+        Screen.Notificacoes,
         Screen.Aparelhos,
         Screen.Treino,
         Screen.Pagamentos,
@@ -114,6 +125,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val labels = mapOf(
         Screen.HomeAluno.route to "Home",
+        Screen.Notificacoes.route to "Avisos",
         Screen.Aparelhos.route to "Aparelhos",
         Screen.Treino.route to "Treino",
         Screen.Pagamentos.route to "Pagamento",
@@ -122,8 +134,9 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val icons = mapOf(
         Screen.HomeAluno.route to Icons.Rounded.Home,
+        Screen.Notificacoes.route to Icons.Rounded.Notifications,
         Screen.Aparelhos.route to Icons.Rounded.FitnessCenter,
-        Screen.Treino.route to Icons.Rounded.Assignment,
+        Screen.Treino.route to Icons.AutoMirrored.Rounded.Assignment,
         Screen.Pagamentos.route to Icons.Rounded.Payment,
         Screen.PerfilAluno.route to Icons.Rounded.Person
     )
@@ -164,11 +177,24 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                         }
                                     },
                                     icon = {
-                                        Icon(
-                                            icons[screen.route] ?: Icons.Default.Home,
-                                            contentDescription = null,
-                                            tint = if (selected) MaterialTheme.colorScheme.primary else TextGray
-                                        )
+                                        // Verifica se é a tela de notificações e se tem aviso novo
+                                        if (screen.route == Screen.Notificacoes.route && temAvisoNovo) {
+                                            BadgedBox(
+                                                badge = { Badge(containerColor = Color(0xFFD9FF00)) }
+                                            ) {
+                                                Icon(
+                                                    icons[screen.route] ?: Icons.Default.Home,
+                                                    contentDescription = null,
+                                                    tint = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                                )
+                                            }
+                                        } else {
+                                            Icon(
+                                                icons[screen.route] ?: Icons.Default.Home,
+                                                contentDescription = null,
+                                                tint = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                            )
+                                        }
                                     },
                                     label = {
                                         Text(
@@ -190,8 +216,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     userRole = userRole,
                     onLogout = onLogout,
                     modifier = Modifier.padding(padding),
-                    snackbarHostState = snackbarHostState
-
+                    snackbarHostState = snackbarHostState,
+                    notificacoesViewModel = notificacoesViewModel // Passando o ViewModel
                 )
             }
         }
@@ -201,6 +227,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             val scope = rememberCoroutineScope()
             val professorItems = listOf(
                 Screen.HomeProfessor,
+                Screen.Notificacoes,
                 Screen.Exercicios,
                 Screen.Fichas,
                 Screen.Avaliacoes
@@ -214,6 +241,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             val mostrarHeaderProfessor = currentRoute !in professorRotasSemHeader
             val professorLabels = mapOf(
                 Screen.HomeProfessor.route to "Dashboard",
+                Screen.Notificacoes.route to "Notificações",
                 Screen.Exercicios.route to "Exercícios",
                 Screen.Fichas.route to "Fichas",
                 Screen.Avaliacoes.route to "Avaliações"
@@ -221,8 +249,9 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
             val professorIcons = mapOf(
                 Screen.HomeProfessor.route to Icons.Outlined.Home,
+                Screen.Notificacoes.route to Icons.Outlined.Notifications,
                 Screen.Exercicios.route to Icons.Rounded.FitnessCenter,
-                Screen.Fichas.route to Icons.Rounded.Assignment,
+                Screen.Fichas.route to Icons.AutoMirrored.Rounded.Assignment,
                 Screen.Avaliacoes.route to Icons.Outlined.People
             )
 
@@ -248,7 +277,16 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             NavigationDrawerItem(
                                 shape = RoundedCornerShape(15.dp),
                                 label = { Text(professorLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
-                                icon = { Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null) },
+                                icon = {
+                                    // Bolinha verde no Drawer do Professor
+                                    if (screen.route == Screen.Notificacoes.route && temAvisoNovo) {
+                                        BadgedBox(badge = { Badge(containerColor = Color(0xFFD9FF00)) }) {
+                                            Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null)
+                                        }
+                                    } else {
+                                        Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null)
+                                    }
+                                },
                                 selected = selected,
                                 onClick = {
                                     navController.navigate(screen.route) { launchSingleTop = true }
@@ -272,7 +310,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         NavigationDrawerItem(
                             shape = RoundedCornerShape(15.dp),
                             label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                            icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
+                            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
@@ -315,23 +353,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                             modifier = Modifier.shadow(elevation = 5.dp)
                         )
-                        if (mostrarHeaderProfessor) {
-                            TopAppBar(
-                                title = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                        Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                                    }
-                                },
-                                navigationIcon = {
-                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                                    }
-                                },
-                                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-                                modifier = Modifier.shadow(elevation = 5.dp)
-                            )
-                        }
                     }
                 ) { padding ->
                     NavContent(
@@ -339,7 +360,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         userRole = userRole,
                         onLogout = onLogout,
                         modifier = Modifier.padding(padding),
-                        snackbarHostState = snackbarHostState
+                        snackbarHostState = snackbarHostState,
+                        notificacoesViewModel = notificacoesViewModel // Passando o ViewModel
                     )
                 }
             }
@@ -351,6 +373,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
             val adminItems = listOf(
                 Screen.HomeAdmin.route,
+                Screen.Notificacoes.route,
                 Screen.AlunosAdmin.route,
                 Screen.ProfessoresAdmin.route,
                 Screen.UnidadesAdmin.route,
@@ -361,6 +384,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
             val adminLabels = mapOf(
                 Screen.HomeAdmin.route to "Dashboard",
+                Screen.Notificacoes.route to "Notificações",
                 Screen.AlunosAdmin.route to "Alunos",
                 Screen.UnidadesAdmin.route to "Unidades",
                 "telaPlanos" to "Planos",
@@ -371,9 +395,10 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
             val adminIcons = mapOf(
                 Screen.HomeAdmin.route to Icons.Outlined.Home,
+                Screen.Notificacoes.route to Icons.Outlined.Notifications,
                 Screen.AlunosAdmin.route to Icons.Outlined.People,
                 Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
-                "telaPlanos" to Icons.Rounded.Assignment,
+                "telaPlanos" to Icons.AutoMirrored.Rounded.Assignment,
                 Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
                 Screen.MaquinasIotAdmin.route to Icons.Outlined.Sensors,
                 Screen.ProfessoresAdmin.route to Icons.Outlined.SupervisorAccount,
@@ -400,7 +425,16 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             NavigationDrawerItem(
                                 shape = RoundedCornerShape(15.dp),
                                 label = { Text(adminLabels[rota] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
-                                icon = { Icon(adminIcons[rota] ?: Icons.Default.Home, contentDescription = null) },
+                                icon = {
+                                    // Bolinha verde no Drawer do Admin
+                                    if (rota == Screen.Notificacoes.route && temAvisoNovo) {
+                                        BadgedBox(badge = { Badge(containerColor = Color(0xFFD9FF00)) }) {
+                                            Icon(adminIcons[rota] ?: Icons.Default.Home, contentDescription = null)
+                                        }
+                                    } else {
+                                        Icon(adminIcons[rota] ?: Icons.Default.Home, contentDescription = null)
+                                    }
+                                },
                                 selected = selected,
                                 onClick = {
                                     navController.navigate(rota) { launchSingleTop = true }
@@ -424,7 +458,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
                         NavigationDrawerItem(
                             label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                            icon = { Icon(Icons.Default.Menu, contentDescription = null) }, // pode trocar por logout depois
+                            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
@@ -465,7 +499,14 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         )
                     }
                 ) { padding ->
-                    NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding), snackbarHostState = snackbarHostState)
+                    NavContent(
+                        navController = navController,
+                        userRole = userRole,
+                        onLogout = onLogout,
+                        modifier = Modifier.padding(padding),
+                        snackbarHostState = snackbarHostState,
+                        notificacoesViewModel = notificacoesViewModel // Passando o ViewModel
+                    )
                 }
             }
         }
@@ -478,7 +519,8 @@ fun NavContent(
     userRole: UserRole,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    notificacoesViewModel: NotificacoesViewModel // Recebendo o ViewModel
 ) {
     val planosViewModel = remember { PlanoViewModel() }
     val treinoViewModel = remember { TreinoViewModel() }
@@ -495,6 +537,10 @@ fun NavContent(
     val fichasViewModel = remember { FichasViewModel(fichaRepository, alunoRepository) }
     val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }
     val professoresViewModel = remember { ProfessoresViewModel() }
+
+
+    // Salvo o ID na memória em vez de passar pela URL
+    var notificacaoEmEdicaoId by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
@@ -589,9 +635,6 @@ fun NavContent(
             CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel)
         }
 
-// ────────────────────────────────────────────────────
-        // ADMIN
-        // ────────────────────────────────────────────────────
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
         composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, viewModel = alunosViewModel) }
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
@@ -613,20 +656,10 @@ fun NavContent(
         composable(
             route = "${Screen.EditarAluno.route}/{alunoId}"
         ) { backStackEntry ->
-
-            val alunoId = backStackEntry.destination.route
-                ?.split("/")
-                ?.lastOrNull()
-                ?.toIntOrNull()
-
+            val alunoId = backStackEntry.destination.route?.split("/")?.lastOrNull()?.toIntOrNull()
             if (alunoId != null) {
-                EditarAlunoScreen(
-                    alunoId = alunoId,
-                    navController = navController,
-                    viewModel = alunosViewModel
-                )
+                EditarAlunoScreen(alunoId = alunoId, navController = navController, viewModel = alunosViewModel)
             } else {
-                println("ERRO: ID do aluno não encontrado")
                 LaunchedEffect(Unit) { navController.popBackStack() }
             }
         }
@@ -642,23 +675,45 @@ fun NavContent(
         composable(
             route = "${Screen.EditarAluno.route}/{professorId}"
         ) { backStackEntry ->
-
-            val professorId = backStackEntry.destination.route
-                ?.split("/")
-                ?.lastOrNull()
-                ?.toIntOrNull()
-
+            val professorId = backStackEntry.destination.route?.split("/")?.lastOrNull()?.toIntOrNull()
             if (professorId != null) {
-                EditarAlunoScreen(
-                    alunoId = professorId,
-                    navController = navController,
-                    viewModel = alunosViewModel
+                EditarAlunoScreen(alunoId = professorId, navController = navController, viewModel = alunosViewModel)
+            } else {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
+        }
+
+        composable(Screen.Notificacoes.route) {
+            NotificacoesScreen(
+                viewModel = notificacoesViewModel, // Usando o ViewModel que foi passado pelo parâmetro
+                isAdmin = userRole == UserRole.ADMIN,
+                onNavigateToCriar = {
+                    notificacaoEmEdicaoId = null // Limpa o ID para o modo "Criar"
+                    navController.navigate(Screen.NovaNotificacao.route)
+                },
+                onNavigateToEditar = { id ->
+                    notificacaoEmEdicaoId = id // Salva o ID na memória
+                    navController.navigate(Screen.EditarNotificacao.createRoute(id))
+                }
+            )
+        }
+
+        composable(Screen.NovaNotificacao.route) {
+            FormularioNotificacaoScreen(
+                notificacaoId = null,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.EditarNotificacao.route) {
+            if (notificacaoEmEdicaoId != null) {
+                FormularioNotificacaoScreen(
+                    notificacaoId = notificacaoEmEdicaoId,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             } else {
-                println("ERRO: ID do professor não encontrado")
                 LaunchedEffect(Unit) { navController.popBackStack() }
             }
         }
     }
 }
-
