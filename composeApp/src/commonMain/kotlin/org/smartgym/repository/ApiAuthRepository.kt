@@ -10,7 +10,8 @@ import org.smartgym.network.ApiClient
 data class LoginResult(
     val sucesso: Boolean,
     val mensagem: String,
-    val papel: String? = null
+    val papel: String? = null,
+    val perfilCompleto: Boolean = false
 )
 
 data class AuthResult(
@@ -37,7 +38,8 @@ class ApiAuthRepository {
                 LoginResult(
                     sucesso = true,
                     mensagem = "Login realizado com sucesso!",
-                    papel = response.papel ?: response.role
+                    papel = response.papel ?: response.role,
+                    perfilCompleto = response.perfilCompleto
                 )
             } else {
                 LoginResult(

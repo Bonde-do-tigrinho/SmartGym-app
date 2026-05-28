@@ -16,10 +16,8 @@ import org.smartgym.viewModel.AuthViewModel
 fun App(resetToken: String? = null) {
     AppTheme {
         val usuarioLogado = remember { mutableStateOf<UserRole?>(null) }
+        val perfilCompleto = remember { mutableStateOf(true) }
         val authViewModel = remember { AuthViewModel() }
-        val authNavController = rememberNavController()
-
-        val startDestination = if (resetToken != null) "resetar-senha/$resetToken" else "login"
 
         if (usuarioLogado.value == null) {
             val authNavController = rememberNavController()
@@ -28,7 +26,12 @@ fun App(resetToken: String? = null) {
                 composable("login") {
                     LoginScreen(
                         navController = authNavController,
-                        onLoginSuccess = { userRole -> usuarioLogado.value = userRole },
+                        onLoginSuccess = { userRole, completou ->
+                            perfilCompleto.value = completou
+                            usuarioLogado.value = userRole
+
+
+                        },
                         viewModel = authViewModel
                     )
                 }
@@ -56,6 +59,7 @@ fun App(resetToken: String? = null) {
         } else {
             AppNavigation(
                 userRole = usuarioLogado.value!!,
+                perfilCompleto = perfilCompleto.value,
                 onLogout = {
                     TokenManager.clearToken()
                     usuarioLogado.value = null

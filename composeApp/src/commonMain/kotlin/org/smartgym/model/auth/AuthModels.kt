@@ -16,7 +16,8 @@ data class LoginResponse(
     val role: String? = null,
     val nome: String? = null,
     val message: String? = null,
-    val mensagem: String? = null
+    val mensagem: String? = null,
+    val perfilCompleto: Boolean
 )
 
 @Serializable

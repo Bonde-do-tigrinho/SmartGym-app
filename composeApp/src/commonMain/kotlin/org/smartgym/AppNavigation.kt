@@ -26,7 +26,6 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,15 +35,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import androidx.savedstate.SavedState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.smartgym.Screens.Adm.AlunosAdminScreen
@@ -70,11 +65,6 @@ import org.smartgym.theme.TextGray
 import org.smartgym.viewModel.Adm.AlunosViewModel
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
 import org.smartgym.viewModel.Professor.FichasViewModel
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.ContentType.Application.Json
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
 import org.smartgym.Screens.Adm.EditarProfessorScreen
 import org.smartgym.Screens.Adm.MaquinasAdminScreen
 import org.smartgym.Screens.Adm.MaquinasIotAdminScreen
@@ -84,14 +74,13 @@ import org.smartgym.Screens.Adm.ProfessoresAdminScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
 import org.smartgym.repository.ApiFichaTreinoRepository
-import org.smartgym.network.ApiClient
 import org.smartgym.viewModel.Adm.PlanoViewModel
 import org.smartgym.viewModel.Adm.ProfessoresViewModel
 import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
+fun AppNavigation(userRole: UserRole, onLogout: () -> Unit, perfilCompleto: Boolean) { // 👈 Recebendo o booleano aqui
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -191,9 +180,9 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     navController = navController,
                     userRole = userRole,
                     onLogout = onLogout,
+                    perfilCompleto = perfilCompleto, // 👈 Passando o booleano adiante para o NavContent
                     modifier = Modifier.padding(padding),
                     snackbarHostState = snackbarHostState
-
                 )
             }
         }
@@ -302,21 +291,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         }
                     },
                     topBar = {
-                        TopAppBar(
-                            title = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                    Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                                }
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-                            modifier = Modifier.shadow(elevation = 5.dp)
-                        )
                         if (mostrarHeaderProfessor) {
                             TopAppBar(
                                 title = {
@@ -340,6 +314,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         navController = navController,
                         userRole = userRole,
                         onLogout = onLogout,
+                        perfilCompleto = true, // Professor não precisa de completar perfil
                         modifier = Modifier.padding(padding),
                         snackbarHostState = snackbarHostState
                     )
@@ -426,7 +401,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
                         NavigationDrawerItem(
                             label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                            icon = { Icon(Icons.Default.Logout, contentDescription = null) }, // pode trocar por logout depois
+                            icon = { Icon(Icons.Default.Logout, contentDescription = null) },
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
@@ -467,7 +442,14 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         )
                     }
                 ) { padding ->
-                    NavContent(navController = navController, userRole = userRole, onLogout = onLogout, modifier = Modifier.padding(padding), snackbarHostState = snackbarHostState)
+                    NavContent(
+                        navController = navController,
+                        userRole = userRole,
+                        onLogout = onLogout,
+                        perfilCompleto = true, // Admin não precisa de completar perfil
+                        modifier = Modifier.padding(padding),
+                        snackbarHostState = snackbarHostState
+                    )
                 }
             }
         }
@@ -479,6 +461,7 @@ fun NavContent(
     navController: NavHostController,
     userRole: UserRole,
     onLogout: () -> Unit,
+    perfilCompleto: Boolean,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState
 ) {
@@ -518,19 +501,33 @@ fun NavContent(
         }
     }
 
+    val startDest = when (userRole) {
+        UserRole.ALUNO -> if (perfilCompleto) Screen.HomeAluno.route else "completar-perfil"
+        UserRole.PROFESSOR -> Screen.HomeProfessor.route
+        UserRole.ADMIN -> Screen.HomeAdmin.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = when (userRole) {
-            UserRole.ALUNO -> Screen.HomeAluno.route
-            UserRole.PROFESSOR -> Screen.HomeProfessor.route
-            UserRole.ADMIN -> Screen.HomeAdmin.route
-        },
+        startDestination = startDest,
         modifier = modifier
     ) {
+        // ────────────────────────────────────────────────────
+        // ROTA DO CADASTRO COMPLEMENTAR DO ALUNO
+        // ────────────────────────────────────────────────────
+        composable("completar-perfil") {
+            val completarViewModel = remember { org.smartgym.viewModel.aluno.CompletarPerfilViewModel() }
+            org.smartgym.Screens.Aluno.CompletarPerfilScreen(
+                navController = navController,
+                viewModel = completarViewModel
+            )
+        }
+
         composable(Screen.HomeAluno.route) {
             HomeScreen(
                 navController = navController,
-                viewModel = alunoPerfilViewModel)
+                viewModel = alunoPerfilViewModel
+            )
         }
         composable(Screen.Aparelhos.route) {
             AparelhosScreen(
@@ -559,8 +556,6 @@ fun NavContent(
                 viewModel = exerciciosViewModel
             )
         }
-
-        composable(Screen.Fichas.route) { FichasScreen(navController) }
 
         composable(Screen.Fichas.route) {
             FichasScreenReal(
@@ -647,7 +642,5 @@ fun NavContent(
         composable(Screen.NovoProfessor.route) {
             NovoProfessorScreen(navController, viewModel = professoresViewModel)
         }
-
     }
 }
-

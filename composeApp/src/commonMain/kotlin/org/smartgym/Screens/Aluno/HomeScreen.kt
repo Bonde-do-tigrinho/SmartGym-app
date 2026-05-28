@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -37,6 +38,14 @@ fun HomeScreen(navController: NavController, viewModel: AlunoPerfilViewModel) {
         return
     }
 
+    LaunchedEffect(Unit){
+        if (perfil == null || perfil?.plano == null) {
+            viewModel.carregarPerfil()
+        }
+    }
+
+    val perfilState by viewModel.perfil.collectAsState()
+
     val nome = perfil?.nome ?: "Usuário"
     val professorNome = perfil?.professorNome
     val planoNome = perfil?.plano?.nome
@@ -52,7 +61,6 @@ fun HomeScreen(navController: NavController, viewModel: AlunoPerfilViewModel) {
             .padding(20.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
