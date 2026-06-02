@@ -8,7 +8,9 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import org.smartgym.model.Adm.Usuario
+import org.smartgym.model.professor.AlunoResumido
 import org.smartgym.network.ApiClient
 
 class ApiProfessorRepository {
@@ -37,5 +39,27 @@ class ApiProfessorRepository {
 
     suspend fun delete(id: Int) {
         client.delete(url("/$id"))
+    }
+
+    suspend fun getMeusAlunos(): List<AlunoResumido> {
+        return try {
+
+            val urlCompleta = ApiClient.getUrl("/api/usuarios/meus-alunos")
+
+            val response = client.get(urlCompleta) {
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.isSuccess()) {
+                response.body<List<AlunoResumido>>()
+            } else {
+                println("🚨 Erro na API ao buscar meus alunos: Status ${response.status}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            println("🚨 Exceção ao buscar meus alunos no Ktor: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
     }
 }

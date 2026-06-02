@@ -19,15 +19,11 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.Font
-import org.smartgym.Screen
 import org.smartgym.theme.SmartGymGreen
 import org.smartgym.util.*
 import org.smartgym.viewModel.Professor.CriarFichaViewModel
@@ -44,25 +40,18 @@ private val InterFont @Composable get() = FontFamily(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewModel, fichaId: Int? = null) {
-    val alunos by viewModel.alunos.collectAsState()
+fun EditarFichaScreen(navController: NavController, viewModel: CriarFichaViewModel, fichaId: Int) {
     val exercicios by viewModel.exercicios.collectAsState()
     val nomeAluno by viewModel.nomeAluno.collectAsState()
-    val selectedAlunoId by viewModel.selectedAlunoId.collectAsState()
     val vigencia by viewModel.vigencia.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val isEditing = fichaId != null
-    val scope = rememberCoroutineScope()
 
     val abaSelecionada by viewModel.abaSelecionada.collectAsState()
     val mapaDias by viewModel.mapaDias.collectAsState()
     val diaAtual = mapaDias[abaSelecionada]!!
 
-    var alunoExpanded by remember { mutableStateOf(false) }
     var exercicioExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
-    var showFichaExistenteDialog by remember { mutableStateOf(false) }
-    var idFichaExistente by remember { mutableStateOf<Int?>(null) }
 
     var vigenciaInput by remember {
         mutableStateOf(TextFieldValue(text = vigencia, selection = TextRange(vigencia.length)))
@@ -78,16 +67,16 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
         exercicios.firstOrNull { it.id == selecionado.exercicioId }?.let { selecionado to it }
     }
 
+    // Dispara o carregamento puxando do banco os dados da ficha pelo ID
     LaunchedEffect(fichaId) {
         viewModel.loadInitialData()
-        if (fichaId != null) viewModel.loadById(fichaId) else viewModel.clearForm()
+        viewModel.loadById(fichaId)
         viewModel.navigationEvent.collectLatest { navController.popBackStack() }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp)) {
 
-            // Botão de voltar topo esquerdo
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = MaterialTheme.colorScheme.onBackground)
@@ -96,7 +85,7 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
 
             Spacer(modifier = Modifier.height(8.dp))
             Text("Ficha de treino", fontFamily = InterFont, fontWeight = FontWeight.Bold, fontSize = 28.sp, color = MaterialTheme.colorScheme.onBackground)
-            Text(if (isEditing) "Editando ficha de treino" else "Criando nova ficha de treino", fontFamily = InterFont, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Editando ficha de treino", fontFamily = InterFont, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -104,47 +93,16 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                // 1. Dropdown de Alunos
+                // 1. Aluno (Leitura apenas na edição para manter a integridade)
                 FormLabelFicha("Aluno (a)")
-                ExposedDropdownMenuBox(
-                    expanded = alunoExpanded,
-                    onExpandedChange = { alunoExpanded = !alunoExpanded },
+                TextField(
+                    value = nomeAluno,
+                    onValueChange = {},
+                    readOnly = true,
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    TextField(
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        value = if (selectedAlunoId != null) nomeAluno else "Selecione um aluno",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alunoExpanded) },
-                        colors = fieldColorsFicha(),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = alunoExpanded,
-                        onDismissRequest = { alunoExpanded = false }
-                    ) {
-                        alunos.forEach { aluno ->
-                            DropdownMenuItem(
-                                text = { Text(aluno.nome, fontFamily = InterFont) },
-                                onClick = {
-                                    alunoExpanded = false
-                                    scope.launch {
-                                        val idFicha = viewModel.obterIdFichaDoAluno(aluno.id)
-                                        if (idFicha != null && !isEditing) {
-                                            idFichaExistente = idFicha
-                                            showFichaExistenteDialog = true
-                                        } else {
-                                            viewModel.updateSelectedAluno(aluno)
-                                        }
-                                    }
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
-                        }
-                    }
-                }
+                    shape = RoundedCornerShape(10.dp),
+                    colors = fieldColorsFicha()
+                )
 
                 // 2. Data de Vigência
                 FormLabelFicha("Válido até...")
@@ -160,7 +118,7 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
 
-                // 💡 REINSERÇÃO: Seletor Fluido de Abas (Treino A, B, C)
+                // 💡 INSERIDO: Seletor de Abas Fluidas para navegação entre os dias (A, B, C)
                 FormLabelFicha("Configuração da Rotina")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -183,7 +141,7 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
                     }
                 }
 
-                // 3. Campo de Foco do Dia Dinâmico (Muda baseado na aba selecionada)
+                // 3. Nome/Foco do Treino Dinâmico baseado na rotina selecionada
                 FormLabelFicha("Foco do Treino ${diaAtual.letra}")
                 TextField(
                     value = diaAtual.focoTreino,
@@ -195,7 +153,7 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
                     colors = fieldColorsFicha()
                 )
 
-                // 4. Campo Adicionar Exercícios ao Dia Selecionado
+                // 4. Input para Buscar e Adicionar Novos Exercícios à rotina atual
                 FormLabelFicha("Adicionar Exercício ao Treino ${diaAtual.letra}")
                 ExposedDropdownMenuBox(expanded = exercicioExpanded, onExpandedChange = { exercicioExpanded = !exercicioExpanded }) {
                     TextField(
@@ -216,7 +174,7 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
                     }
                 }
 
-                // 💡 REINSERÇÃO: Lista de Exercícios Configuráveis com os Inputs de Séries, Reps e Segundos
+                // 💡 INSERIDO: Lista de Cards de Exercícios Completos com Inputs Numéricos para a Edição
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -236,7 +194,7 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botão Salvar Estilo Mockup (Verde Limão/Tema do App)
+            // Botão Salvar Alterações da Ficha
             Button(
                 onClick = viewModel::save,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -247,13 +205,12 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
                 } else {
-                    Text("Salvar Ficha Completa", color = Color.Black, fontFamily = InterFont, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Salvar Alterações", color = Color.Black, fontFamily = InterFont, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Seletor de Calendário Nativo
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(initialDisplayMode = DisplayMode.Picker)
             DatePickerDialog(
@@ -267,122 +224,6 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
                     }) { Text("OK") }
                 }
             ) { DatePicker(state = datePickerState, title = null, headline = null, showModeToggle = false) }
-        }
-
-        // Alerta de Ficha Ativa Existente
-        if (showFichaExistenteDialog && idFichaExistente != null) {
-            Dialog(onDismissRequest = { showFichaExistenteDialog = false }) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                        .padding(24.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.Info, "Aviso", tint = SmartGymGreen, modifier = Modifier.size(40.dp))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Aluno já possui ficha!", fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = InterFont, color = MaterialTheme.colorScheme.onSurface)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Para evitar conflitos de treino, recomendamos que você altere a ficha existente em vez de criar uma nova.", fontSize = 14.sp, fontFamily = InterFont, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    showFichaExistenteDialog = false
-                                    viewModel.prepareForEdit(idFichaExistente!!)
-                                    navController.navigate("${Screen.EditarFicha.route}/$idFichaExistente") {
-                                        popUpTo(Screen.NovaFicha.route) { inclusive = true }
-                                    }
-                                },
-                                modifier = Modifier.weight(1.5f).height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = SmartGymGreen)
-                            ) {
-                                Text("Alterar Ficha", color = Color.Black, fontFamily = InterFont, fontWeight = FontWeight.Bold)
-                            }
-                            Button(
-                                onClick = { showFichaExistenteDialog = false },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-                            ) {
-                                Text("Cancelar", fontFamily = InterFont)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// 💡 NOVO: Card Compacto Adaptado com Chips Verdes do Tema e Inputs Alinhados do Backend
-@Composable
-fun ExercicioEditCardReal(
-    nome: String,
-    config: org.smartgym.model.professor.ExercicioFichaTreino,
-    onUpdateSeries: (String) -> Unit,
-    onUpdateReps: (String) -> Unit,
-    onUpdateRest: (String) -> Unit,
-    onRemove: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Chip verde suave marcando o nome do exercício selecionado igual ao mockup
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(SmartGymGreen.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(nome, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, fontFamily = InterFont)
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Outlined.Close, "Remover", modifier = Modifier.size(18.dp), tint = Color.Red)
-            }
-        }
-
-        // Linha com as 3 entradas numéricas dinâmicas vinculadas ao ViewModel
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val fieldModifier = Modifier.weight(1f).height(46.dp)
-
-            TextField(
-                value = config.series.let { if (it > 0) it.toString() else "" },
-                onValueChange = onUpdateSeries,
-                placeholder = { Text("Séries", fontSize = 12.sp) },
-                modifier = fieldModifier,
-                shape = RoundedCornerShape(8.dp),
-                colors = compactFieldColors(),
-                singleLine = true
-            )
-            TextField(
-                value = config.repeticoes.let { if (it > 0) it.toString() else "" },
-                onValueChange = onUpdateReps,
-                placeholder = { Text("Reps", fontSize = 12.sp) },
-                modifier = fieldModifier,
-                shape = RoundedCornerShape(8.dp),
-                colors = compactFieldColors(),
-                singleLine = true
-            )
-            TextField(
-                value = config.descansoSegundos.let { if (it > 0) it.toString() else "" },
-                onValueChange = onUpdateRest,
-                placeholder = { Text("Descanso", fontSize = 11.sp) },
-                modifier = fieldModifier,
-                shape = RoundedCornerShape(8.dp),
-                colors = compactFieldColors(),
-                singleLine = true
-            )
         }
     }
 }
@@ -416,38 +257,3 @@ private fun fieldColorsFicha() = TextFieldDefaults.colors(
     focusedTextColor = MaterialTheme.colorScheme.onSurface,
     unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 )
-
-@Composable
-fun InputChipReal(
-    text: String,
-    onRemove: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .background(
-                color = SmartGymGreen.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(10.dp)
-            )
-            .clickable { onRemove() }
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = "Remover",
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = text,
-                fontFamily = InterFont,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}

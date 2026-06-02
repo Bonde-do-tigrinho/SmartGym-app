@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
+import org.smartgym.model.Adm.Plano
 import org.smartgym.viewModel.Adm.AlunosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,11 +36,11 @@ fun NovoAlunoScreen(
 
     var nome by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var planoSelecionado by remember { mutableStateOf("") }
+    var planoSelecionado by remember { mutableStateOf<Plano?>(null) }
     var status by remember { mutableStateOf(true) }
     var dropdownExpanded by remember { mutableStateOf(false) }
 
-    val planos = listOf("Basic", "Premium", "Black")
+    val listaPlanosReais by viewModel.planosDisponiveis.collectAsState()
 
     var cpfRaw by remember { mutableStateOf("") }
     var telefoneRaw by remember { mutableStateOf("") }
@@ -116,7 +117,7 @@ fun NovoAlunoScreen(
                 onExpandedChange = { dropdownExpanded = it }
             ) {
                 OutlinedTextField(
-                    value = planoSelecionado,
+                    value = planoSelecionado?.nome.orEmpty(),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Selecione o plano") },
@@ -128,11 +129,13 @@ fun NovoAlunoScreen(
                     expanded = dropdownExpanded,
                     onDismissRequest = { dropdownExpanded = false }
                 ) {
-                    planos.forEach { plano ->
+                    listaPlanosReais.forEach { planoObjeto ->
                         DropdownMenuItem(
-                            text = { Text(plano) },
+                            text = {
+                                Text("${planoObjeto.nome} - R$ ${planoObjeto.valor}")
+                                   },
                             onClick = {
-                                planoSelecionado = plano
+                                planoSelecionado = planoObjeto
                                 dropdownExpanded = false
                             }
                         )
@@ -193,7 +196,7 @@ fun NovoAlunoScreen(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
-                enabled = nome.isNotBlank() && email.isNotBlank() && planoSelecionado.isNotBlank()
+                enabled = nome.isNotBlank() && email.isNotBlank() && planoSelecionado != null
             ) {
                 Text("Salvar Usuario", color = Color.Black, fontWeight = FontWeight.Bold)
             }

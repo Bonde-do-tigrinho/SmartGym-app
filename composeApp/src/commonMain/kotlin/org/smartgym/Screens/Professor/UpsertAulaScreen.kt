@@ -35,7 +35,7 @@ fun UpsertAulaScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val globalSnackbar = LocalSnackbar.current // Puxa a tomada do Snackbar
 
-    val aulaIdParaEditar = navController.previousBackStackEntry?.savedStateHandle?.get<Long>("aulaIdParaEditar")
+    val aulaIdParaEditar = navController.previousBackStackEntry?.savedStateHandle?.get<Int>("aulaIdParaEditar")
     val isEdicao = aulaIdParaEditar != null
 
     var nome by remember { mutableStateOf("") }
@@ -116,7 +116,7 @@ fun UpsertAulaScreen(
                         capacidadeMaxima = capacidadeMaxima.toIntOrNull() ?: 0,
                         dataHoraInicio = "${dataFormatadaIso}T${horaInicio}:00",
                         dataHoraFim = "${dataFormatadaIso}T${horaFim}:00",
-                        professorId = 3L
+                        professorId = 3
                     )
 
                     val onSuccessCallback: () -> Unit = {

@@ -38,7 +38,7 @@ class ApiAulasColetivasRepository {
         return response.body()
     }
 
-    suspend fun update(id: Long, aula: AulaColetiva): AulaColetiva {
+    suspend fun update(id: Int, aula: AulaColetiva): AulaColetiva {
         val response = client.put(url("/$id")) {
             contentType(ContentType.Application.Json)
             setBody(aula)
@@ -47,7 +47,7 @@ class ApiAulasColetivasRepository {
         return response.body()
     }
 
-    suspend fun delete(id: Long) {
+    suspend fun delete(id: Int) {
         val response = client.delete(url("/$id"))
         checarErro(response)
     }
@@ -60,7 +60,7 @@ class ApiAulasColetivasRepository {
         return response.body()
     }
 
-    suspend fun getById(id: Long): AulaColetiva {
+    suspend fun getById(id: Int): AulaColetiva {
         val response = client.get(url("/$id"))
         checarErro(response)
         return response.body()

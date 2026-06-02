@@ -4,4 +4,6 @@ import org.smartgym.model.professor.AlunoResumido
 
 interface AlunoRepository {
     suspend fun getAll(): List<AlunoResumido>
+
+    suspend fun getMeusAlunos(): List<AlunoResumido>
 }

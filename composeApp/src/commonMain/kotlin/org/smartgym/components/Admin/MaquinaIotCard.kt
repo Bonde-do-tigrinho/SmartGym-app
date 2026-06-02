@@ -23,14 +23,13 @@ fun MaquinaIotCard(
     maquinaIot: MaquinaIot,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onStatusToggleClick: () -> Unit
 ) {
-    val statusDaApi = maquinaIot.status?.uppercase() ?: "LIVRE"
+    val statusDaApi = maquinaIot.status.name
 
     val statusColor = when (statusDaApi) {
-        "LIVRE" -> Color(0xFF4CAF50) // Verde
-        "OCUPADA" -> Color(0xFFF44336) // Vermelho
-        "MANUTENCAO" -> Color(0xFFFF9800) // Laranja
+        "LIVRE" -> Color(0xFF4CAF50)
+        "OCUPADA" -> Color(0xFFF44336)
+        "MANUTENCAO" -> Color(0xFFFF9800)
         else -> Color.Gray
     }
 
@@ -70,25 +69,15 @@ fun MaquinaIotCard(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = maquinaIot.nome ?: "Sem Nome", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(45.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(text = "Localização:", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 Text(text = maquinaIot.localizacao ?: "N/A", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            val textoDoBotao = if (statusDaApi == "LIVRE") "Marcar Ocupada" else "Liberar Máquina"
-
-            OutlinedButton(
-                onClick = onStatusToggleClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-            ) {
-                Text(text = textoDoBotao, fontWeight = FontWeight.SemiBold)
-            }
         }
     }
 }

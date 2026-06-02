@@ -66,12 +66,11 @@ private val InterFont @Composable get() = FontFamily(
 
 @Composable
 fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewModel) {
-    val searchQuery = remember { mutableStateOf("") }
+    val searchQuery = viewModel.searchQuery.collectAsState()
     val avaliacoes by viewModel.avaliacoes.collectAsState()
     var avaliacaoToDelete by remember { mutableStateOf<Avaliacao?>(null) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    // Carrega na entrada inicial e ao voltar desta tela (ex: após criar/editar)
     LaunchedEffect(navBackStackEntry) {
         if (navBackStackEntry?.destination?.route == Screen.Avaliacoes.route) {
             viewModel.loadAll()
@@ -139,10 +138,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
 
                     TextField(
                         value = searchQuery.value,
-                        onValueChange = {
-                            searchQuery.value = it
-                            if (it.isBlank()) viewModel.loadAll() else viewModel.loadByNomeAluno(it)
-                        },
+                        onValueChange = { viewModel.updateSearchQuery(it)},
                         placeholder = {
                             Text(
                                 "Buscar avaliacões...",
@@ -178,13 +174,14 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                items(avaliacoes, key = { it.id }) { avaliacao ->
+                val avaliacoesFiltradas = viewModel.filteredAvaliacoes()
+
+                items(avaliacoesFiltradas, key = { it.id }) { avaliacao ->
                     AvaliacaoCard(
                         avaliacao = avaliacao,
                         onEdit = {
-                            if (it.id != 0) {
-                                viewModel.loadById(it.id)
-                                navController.navigate(Screen.NovaAvaliacao.route)
+                            if (avaliacao.id != 0) {
+                                navController.navigate("${Screen.EditarAvaliacao.route}/${avaliacao.id}")
                             }
                         },
                         onDelete = { avaliacaoToDelete = it }

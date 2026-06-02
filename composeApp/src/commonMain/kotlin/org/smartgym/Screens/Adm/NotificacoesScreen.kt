@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
@@ -20,11 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import org.smartgym.viewModel.Adm.NotificacoesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificacoesScreen(
+    navController: NavController,
     viewModel: NotificacoesViewModel = viewModel(),
     isAdmin: Boolean = true,
     onNavigateToCriar: () -> Unit = {},
@@ -32,13 +35,30 @@ fun NotificacoesScreen(
 ) {
     val notificacoes by viewModel.notificacoes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val colors = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         viewModel.carregarNotificacoes()
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("Avisos e Notificações") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) { // 🎯 VOLTA PARA A HOME
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = colors.onSurface
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colors.surface
+                )
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -49,7 +69,6 @@ fun NotificacoesScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // CABEÇALHO DO APP
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

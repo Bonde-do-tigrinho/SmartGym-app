@@ -3,57 +3,82 @@ package org.smartgym.viewModel.aluno
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
-import org.smartgym.model.aluno.Exercicio
-import org.smartgym.model.aluno.TreinoDia
+import kotlinx.coroutines.launch
+import org.smartgym.model.professor.Exercicio
+import org.smartgym.model.professor.FichaTreino
+import org.smartgym.model.professor.ExercicioFichaTreino
+import org.smartgym.repository.ApiExercicioRepository
+import org.smartgym.repository.FichaTreinoRepository
 
-class TreinoViewModel : ViewModel() {
+class TreinoViewModel(
+    private val repository: FichaTreinoRepository,
+    private val exercicioRepository: ApiExercicioRepository
+) : ViewModel() {
 
-    // 1. O Banco de Dados Falso (Estado base)
-    private val _treinos = MutableStateFlow(
-        listOf(
-            TreinoDia("A", "Peito\ne Tríc", listOf(
-                Exercicio(1, "Supino Reto", 4, 10, "Peito", true),
-                Exercicio(2, "Supino Inclinado", 3, 12, "Peito", true),
-                Exercicio(3, "Crossover", 3, 15, "Peito", false),
-                Exercicio(4, "Tríceps Pulley", 3, 12, "Tríceps", false),
-                Exercicio(5, "Tríceps Testa", 4, 10, "Tríceps", false)
-            )),
-            TreinoDia("B", "Costas\ne Bíceps", listOf(
-                Exercicio(6, "Puxada Frontal", 4, 12, "Costas", false),
-                Exercicio(7, "Remada Curvada", 4, 10, "Costas", false)
-            )),
-            TreinoDia("C", "Pernas\ne Glúteos", listOf(
-                Exercicio(8, "Leg Press", 4, 12, "Pernas", false),
-                Exercicio(9, "Cadeira Extensora", 4, 15, "Pernas", false)
-            ))
-        )
-    )
-    val treinos = _treinos.asStateFlow()
+    private val _fichaAtiva = MutableStateFlow<FichaTreino?>(null)
+    val fichaAtiva = _fichaAtiva.asStateFlow()
 
-    // 2. Qual treino está selecionado no momento? (Padrão: A)
-    private val _diaSelecionado = MutableStateFlow("A")
-    val diaSelecionado = _diaSelecionado.asStateFlow()
+    private val _listaExerciciosCadastrados = MutableStateFlow<List<Exercicio>>(emptyList())
+    val listaExerciciosCadastrados = _listaExerciciosCadastrados.asStateFlow()
 
-    // 3. Uma lista derivada: pega apenas os exercícios do dia selecionado
-    val exerciciosDoDia = combine(_treinos, _diaSelecionado) { listaTreinos, dia ->
-        listaTreinos.find { it.id == dia }?.exercicios ?: emptyList()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _exerciciosConcluidosIds = MutableStateFlow<Set<Int>>(emptySet())
+    val exerciciosConcluidosIds = _exerciciosConcluidosIds.asStateFlow()
+    
+    private val _letraSelecionada = MutableStateFlow("A") // Padrão começa no Treino A
+    val letraSelecionada = _letraSelecionada.asStateFlow()
+
+
+    val exerciciosDoDiaAtivo = combine(_fichaAtiva, _letraSelecionada) { ficha, letra ->
+        ficha?.rotinaDias?.find { it.letra.equals(letra, ignoreCase = true) }?.exercicios ?: emptyList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // 4. Ações disparadas pela View
-    fun selecionarDia(idDia: String) {
-        _diaSelecionado.value = idDia
+    val focoDoDiaAtivo = combine(_fichaAtiva, _letraSelecionada) { ficha, letra ->
+        ficha?.rotinaDias?.find { it.letra.equals(letra, ignoreCase = true) }?.focoTreino ?: "Nenhum Foco"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Nenhum Foco")
+
+    init {
+        carregarMeuTreino()
+    }
+
+    fun carregarMeuTreino() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _listaExerciciosCadastrados.value = exercicioRepository.getAll()
+                _fichaAtiva.value = repository.getMinhaFicha()
+
+                _exerciciosConcluidosIds.value = emptySet()
+            } catch (e: Exception) {
+                _fichaAtiva.value = null
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun selecionarDia(letra: String) {
+        _letraSelecionada.value = letra
+        _exerciciosConcluidosIds.value = emptySet()
+    }
+
+    fun obterNomeExercicio(id: Int): String {
+        return _listaExerciciosCadastrados.value.find { it.id == id }?.nome ?: "Exercício #$id"
+    }
+
+    fun obterGrupoMuscular(id: Int): String {
+        return _listaExerciciosCadastrados.value.find { it.id == id }?.grupoMuscular ?: "Geral"
     }
 
     fun alternarConclusaoExercicio(exercicioId: Int) {
-        // Encontra o treino e inverte o status do exercício selecionado
-        _treinos.value = _treinos.value.map { treino ->
-            if (treino.id == _diaSelecionado.value) {
-                treino.copy(exercicios = treino.exercicios.map { ex ->
-                    if (ex.id == exercicioId) ex.copy(concluido = !ex.concluido) else ex
-                })
-            } else {
-                treino
-            }
+        val atuais = _exerciciosConcluidosIds.value.toMutableSet()
+        if (atuais.contains(exercicioId)) {
+            atuais.remove(exercicioId)
+        } else {
+            atuais.add(exercicioId)
         }
+        _exerciciosConcluidosIds.value = atuais
     }
 }

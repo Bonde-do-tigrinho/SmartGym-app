@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +45,10 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
     val isLoading by viewModel.isLoading.collectAsState()
 
     val horizontalScrollState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        viewModel.carregarAlunos()
+    }
 
     Column(
         modifier = modifier
@@ -214,7 +219,14 @@ fun AlunoRow(
                 .padding(vertical = 4.dp),
             contentAlignment = Alignment.Center
         ) {
-            usuario.plano?.let { Text(it, fontSize = 11.sp, color = Color(0xFFD9FF00), fontWeight = FontWeight.ExtraBold) }
+            usuario.plano?.let { planoObjeto ->
+                Text(
+                    text = planoObjeto.nome,
+                    fontSize = 11.sp,
+                    color = Color(0xFF9EBB00),
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
         }
 
         val statusTexto = if (usuario.status) "Ativo" else "Inativo"

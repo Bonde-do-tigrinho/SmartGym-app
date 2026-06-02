@@ -99,6 +99,7 @@ fun CriarAvaliacaoScreen(navController: NavController, viewModel: AvaliacoesView
 
     LaunchedEffect(Unit) {
         viewModel.loadAlunosResumo()
+
         viewModel.navigationEvent.collectLatest {
             navController.popBackStack()
         }

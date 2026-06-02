@@ -11,7 +11,7 @@ data class Usuario(
     val cpf: String,
     val telefone: String,
     val role: String? = null,
-    val plano: String? = null,
+    val plano: Plano? = null,
     @EncodeDefault val status: Boolean = true,
     val treinoAtual: String? = null,
     val focoTreino: String? = null,

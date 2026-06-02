@@ -1,5 +1,9 @@
+package org.smartgym.viewModel.Adm
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -32,7 +36,15 @@ class MaquinaIotViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _maquinasIot.value = repository.getAll()
+                try {
+                    val jsonBruto = repository.getAllBruto()
+                } catch (e: Exception) {
+                }
+
+                val lista = repository.getAll()
+                _maquinasIot.value = emptyList()
+                _maquinasIot.value = lista
+
             } catch (e: Exception) {
                 _snackbarEvent.emit("Erro ao carregar máquinas IOT: ${e.message}")
             } finally {
@@ -75,11 +87,18 @@ class MaquinaIotViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.create(maquinaIot)
-                _snackbarEvent.emit("Máquina IOT criada com sucesso!")
-                carregarMaquinasIot()
+                val response: HttpResponse = repository.createRaw(maquinaIot)
+
+                if (response.status.value in 200..299) {
+                    _snackbarEvent.emit("Máquina IOT criada com sucesso!")
+                    carregarMaquinasIot()
+                } else {
+                    _snackbarEvent.emit("Erro no Servidor: Status ${response.status.value}")
+                }
+
             } catch (e: Exception) {
-                _snackbarEvent.emit("Erro ao criar: ${e.message}")
+                println("🚨 [ERRO DE REDE/CONEXÃO]: ${e.message}")
+                _snackbarEvent.emit("Erro ao conectar: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
@@ -91,7 +110,7 @@ class MaquinaIotViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 repository.update(id, maquinaIot)
-                _snackbarEvent.emit("Máquina IOT atualizada com sucesso!")
+                _snackbarEvent.emit("Máquina IOT actualizada com sucesso!")
                 carregarMaquinasIot()
             } catch (e: Exception) {
                 _snackbarEvent.emit("Erro ao atualizar: ${e.message}")

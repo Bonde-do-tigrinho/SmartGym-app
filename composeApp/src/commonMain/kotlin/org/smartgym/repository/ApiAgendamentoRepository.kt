@@ -41,9 +41,9 @@ class ApiAgendamentosRepository {
 
     suspend fun cancelar(id: Long) = client.delete(url("/$id"))
 
-    suspend fun getAgendamentosDoAluno(alunoId: Long): List<Agendamento> =
+    suspend fun getAgendamentosDoAluno(alunoId: Int): List<Agendamento> =
         client.get(url("/aluno/$alunoId")).body()
 
-    suspend fun getAgendamentosDaAula(aulaId: Long): List<Agendamento> =
+    suspend fun getAgendamentosDaAula(aulaId: Int): List<Agendamento> =
         client.get(url("/aula/$aulaId")).body()
 }

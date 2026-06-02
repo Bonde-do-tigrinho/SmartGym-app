@@ -11,6 +11,8 @@ data class Avaliacao(
     val alunoId: Int = 0,
     @SerialName("nomeAluno")
     val nomeAluno: String,
+    @SerialName("professorId")
+    val professorId: Int,
     @SerialName("dataAvaliacao")
     val dataAvaliacao: String,
     @SerialName("peso")

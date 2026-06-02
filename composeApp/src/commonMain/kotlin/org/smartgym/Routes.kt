@@ -19,15 +19,17 @@ sealed class Screen(val route: String){
     object Fichas : Screen("fichas")
     object NovaFicha : Screen("nova_ficha")
     object EditarFicha : Screen("editar_ficha")
+    object VisualizarFicha : Screen("visualizar_ficha")
     object Avaliacoes : Screen("avaliacoes")
     object NovaAvaliacao : Screen("nova_avaliacao")
+    object EditarAvaliacao : Screen("editar_avaliacao/{id}")
+
     object AulasProfessor : Screen("aulas_professor")
     object UpsertAulaProfessor : Screen("upsert_aula_professor")
 
     //Rotas do admin
     object HomeAdmin: Screen("home_admin")
     object UnidadesAdmin : Screen("unidades_admin")
-    object MaquinasAdmin : Screen("maquinas_admin")
     object MaquinasIotAdmin : Screen("maquinas_iot_admin")
     object AlunosAdmin: Screen("alunos_admin")
     object NovoAluno : Screen("novo_aluno")

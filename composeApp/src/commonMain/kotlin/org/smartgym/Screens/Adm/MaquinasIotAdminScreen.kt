@@ -1,6 +1,6 @@
 package org.smartgym.Screens.Adm
 
-import MaquinaIotViewModel
+import org.smartgym.viewModel.Adm.MaquinaIotViewModel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,9 +33,25 @@ fun MaquinasIotAdminScreen(
     var maquinaIotParaEditar by remember { mutableStateOf<MaquinaIot?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(mostrandoFormulario) {
+        if (!mostrandoFormulario) {
+            while (true) {
+                viewModel.carregarMaquinasIot()
+
+                kotlinx.coroutines.delay(3000L)
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collectLatest { mensagem ->
             snackbarHostState.showSnackbar(mensagem)
+
+            if (mensagem.contains("sucesso", ignoreCase = true)) {
+                mostrandoFormulario = false
+                maquinaIotParaEditar = null
+                viewModel.carregarMaquinasIot()
+            }
         }
     }
 
@@ -80,9 +96,8 @@ private fun ListagemMaquinasIotContent(
     val isLoading by viewModel.isLoading.collectAsState()
     var maquinaIotIdParaApagar by remember { mutableStateOf<String?>(null) }
 
-    // Conta exatamente pelos status da API
-    val maquinasIotLivres = listaDeMaquinasIot.count { it.status?.uppercase() == "LIVRE" }
-    val maquinasIotOcupadas = listaDeMaquinasIot.count { it.status?.uppercase() != "LIVRE" } // Ocupada ou Manutencao
+    val maquinasIotLivres = listaDeMaquinasIot.count { it.status == org.smartgym.model.Adm.StatusMaquinaIot.LIVRE }
+    val maquinasIotOcupadas = listaDeMaquinasIot.count { it.status != org.smartgym.model.Adm.StatusMaquinaIot.LIVRE }
 
     Column(
         modifier = modifier
@@ -168,11 +183,6 @@ private fun ListagemMaquinasIotContent(
                         maquinaIot = maquinaIot,
                         onEditClick = { onEditClick(maquinaIot) },
                         onDeleteClick = { maquinaIotIdParaApagar = maquinaIot.id },
-                        onStatusToggleClick = {
-                            val novoStatus = if (maquinaIot.status?.uppercase() == "LIVRE") "OCUPADA" else "LIVRE"
-                            val maquinaIotAtualizada = maquinaIot.copy(status = novoStatus)
-                            maquinaIot.id?.let { id -> viewModel.atualizarMaquinaIot(id, maquinaIotAtualizada) }
-                        }
                     )
                 }
             }

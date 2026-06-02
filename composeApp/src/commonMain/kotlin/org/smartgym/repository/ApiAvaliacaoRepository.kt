@@ -18,7 +18,7 @@ import org.smartgym.util.formatDateToBackend
 class ApiAvaliacaoRepository : AvaliacaoRepository {
 
     private val client = ApiClient.client
-    private val basePaths = listOf("/api/avaliacoes", "/api/avaliacao", "/avaliacoes", "/avaliacao")
+    private val basePaths = listOf("/api/avaliacoes")
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -84,14 +84,21 @@ class ApiAvaliacaoRepository : AvaliacaoRepository {
         }
     }
 
-    override suspend fun update(id: Int, avaliacao: Avaliacao) {
-        val payload = avaliacao.copy(dataAvaliacao = formatDateToBackend(avaliacao.dataAvaliacao))
-        execute { basePath ->
-            client.put(url(basePath, "/$id")) {
-                contentType(ContentType.Application.Json)
-                setBody(payload)
-            }
+    override suspend fun update(id: Int, avaliacao: Avaliacao): Unit = execute { basePath ->
+        println("📡 [KTOR PUT] Atualizando avaliação ID: $id no endpoint: ${url(basePath, "/$id")}")
+
+        val response = client.put(url(basePath, "/$id")) {
+            contentType(ContentType.Application.Json)
+            setBody(avaliacao)
         }
+
+        if (response.status.value !in 200..299) {
+            val erroCorpo = runCatching { response.bodyAsText() }.getOrNull().orEmpty()
+            println("🚨 [KTOR PUT ERRO] Status ${response.status.value} | Body: $erroCorpo")
+            throw Exception("Erro ao atualizar avaliação no servidor.")
+        }
+
+        avaliacao
     }
 
     override suspend fun delete(id: Int) {
@@ -107,6 +114,24 @@ class ApiAvaliacaoRepository : AvaliacaoRepository {
         return getAll().filter { avaliacao ->
             avaliacao.nomeAluno.contains(termo, ignoreCase = true) ||
                 avaliacao.id.toString() == termo
+        }
+    }
+
+    override suspend fun getAvaliacoesProfessor(): List<Avaliacao> = execute { basePath ->
+        val urlFinal = url(basePath, "/professor")
+
+        val response = client.get(urlFinal)
+        val bodyText = response.bodyAsText()
+
+        if (bodyText.isBlank() || bodyText == "[]") {
+            emptyList()
+        } else {
+            try {
+                val listaMapeada = json.decodeFromString<List<Avaliacao>>(bodyText)
+                listaMapeada
+            } catch (e: Exception) {
+                throw e
+            }
         }
     }
 }

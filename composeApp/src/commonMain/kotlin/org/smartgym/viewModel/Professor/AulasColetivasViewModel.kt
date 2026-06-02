@@ -48,7 +48,7 @@ class AulasColetivasViewModel : ViewModel() {
         }
     }
 
-    fun buscarAulaPorId(id: Long, onResult: (AulaColetiva) -> Unit) {
+    fun buscarAulaPorId(id: Int, onResult: (AulaColetiva) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -78,7 +78,7 @@ class AulasColetivasViewModel : ViewModel() {
         }
     }
 
-    fun atualizarAula(id: Long, aula: AulaColetiva, onSuccess: () -> Unit) {
+    fun atualizarAula(id: Int, aula: AulaColetiva, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -94,7 +94,7 @@ class AulasColetivasViewModel : ViewModel() {
         }
     }
 
-    fun deletarAula(id: Long) {
+    fun deletarAula(id: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             try {

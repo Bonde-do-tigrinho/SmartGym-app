@@ -22,11 +22,18 @@ class AvaliacoesViewModel(
     private val alunoRepository: AlunoRepository
 ) : ViewModel() {
 
+    // 🎯 Mantendo apenas o StateFlow central de avaliações (igual ao '_fichas' da Ficha)
     private val _avaliacoes = MutableStateFlow<List<Avaliacao>>(emptyList())
     val avaliacoes: StateFlow<List<Avaliacao>> = _avaliacoes.asStateFlow()
 
+    private val _alunosResumo = MutableStateFlow<List<AlunoResumido>>(emptyList())
+    val alunosResumo: StateFlow<List<AlunoResumido>> = _alunosResumo.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
@@ -34,6 +41,7 @@ class AvaliacoesViewModel(
     private val _navigationEvent = MutableSharedFlow<Unit>()
     val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
+    // Estados do Formulário (Criação/Edição)
     private val _nomeAluno = MutableStateFlow("")
     val nomeAluno: StateFlow<String> = _nomeAluno.asStateFlow()
 
@@ -55,16 +63,15 @@ class AvaliacoesViewModel(
     private val _editingId = MutableStateFlow<Int?>(null)
     val editingId: StateFlow<Int?> = _editingId.asStateFlow()
 
-    private val _alunosResumo = MutableStateFlow<List<AlunoResumido>>(emptyList())
-    val alunosResumo: StateFlow<List<AlunoResumido>> = _alunosResumo.asStateFlow()
-
     private val _selectedAlunoId = MutableStateFlow<Int?>(null)
     val selectedAlunoId: StateFlow<Int?> = _selectedAlunoId.asStateFlow()
 
     init {
+        loadAll()
         loadAlunosResumo()
     }
 
+    fun updateSearchQuery(value: String) { _searchQuery.value = value }
     fun updateNomeAluno(value: String) { _nomeAluno.value = value }
     fun updateSelectedAlunoId(value: Int) {
         _selectedAlunoId.value = value
@@ -79,26 +86,34 @@ class AvaliacoesViewModel(
     fun loadAll() {
         viewModelScope.launch {
             _isLoading.value = true
+            println("⚙️ [VIEWMODEL] Chamando loadAll() via token...")
             try {
-                _avaliacoes.value = repository.getAll()
+                // Chama a nova rota filtrada do Ktor
+                val lista = repository.getAvaliacoesProfessor()
+                _avaliacoes.value = lista.sortedByDescending { it.id ?: 0 }
+                println("⚙️ [VIEWMODEL] StateFlow 'avaliacoes' atualizado com ${lista.size} itens.")
             } catch (e: Exception) {
                 _avaliacoes.value = emptyList()
-                _snackbarEvent.emit("Erro ao carregar avaliacoes: ${e.message}")
+                println("🚨 [VIEWMODEL ERRO] Falha ao carregar avaliações: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun loadByNomeAluno(nomeAluno: String) {
+    fun loadAlunosResumo() {
         viewModelScope.launch {
-            _isLoading.value = true
             try {
-                _avaliacoes.value = repository.getByNomeAluno(nomeAluno)
+                _alunosResumo.value = alunoRepository.getAll().sortedBy { it.nome.lowercase() }
+
+                val selecionadoAtual = _selectedAlunoId.value
+                if (selecionadoAtual != null) {
+                    _nomeAluno.value = _alunosResumo.value
+                        .firstOrNull { it.id == selecionadoAtual }
+                        ?.nome ?: _nomeAluno.value
+                }
             } catch (e: Exception) {
-                _snackbarEvent.emit("Erro ao buscar avaliacoes: ${e.message}")
-            } finally {
-                _isLoading.value = false
+                _snackbarEvent.emit("Erro ao carregar alunos: ${e.message}")
             }
         }
     }
@@ -125,24 +140,6 @@ class AvaliacoesViewModel(
         }
     }
 
-    fun loadAlunosResumo() {
-        viewModelScope.launch {
-            try {
-                _alunosResumo.value = alunoRepository.getAll().sortedBy { it.nome.lowercase() }
-
-                val selecionadoAtual = _selectedAlunoId.value
-                if (selecionadoAtual != null) {
-                    _nomeAluno.value = _alunosResumo.value
-                        .firstOrNull { it.id == selecionadoAtual }
-                        ?.nome
-                        ?: _nomeAluno.value
-                }
-            } catch (e: Exception) {
-                _snackbarEvent.emit("Erro ao carregar alunos: ${e.message}")
-            }
-        }
-    }
-
     fun save() {
         viewModelScope.launch {
             if (!formularioValido()) {
@@ -152,18 +149,27 @@ class AvaliacoesViewModel(
 
             _isLoading.value = true
             try {
+                val idEdicao = _editingId.value
+
+                val dataFormatadaParaApi = try {
+                    val partes = _dataAvaliacao.value.trim().split("/")
+                    "${partes[2]}-${partes[1]}-${partes[0]}"
+                } catch (e: Exception) {
+                    _dataAvaliacao.value.trim()
+                }
+
                 val avaliacao = Avaliacao(
-                    id = _editingId.value ?: 0,
+                    id = idEdicao ?: 0,
                     alunoId = _selectedAlunoId.value ?: 0,
                     nomeAluno = _nomeAluno.value.trim(),
-                    dataAvaliacao = _dataAvaliacao.value.trim(),
+                    dataAvaliacao = dataFormatadaParaApi,
+                    professorId = 0,
                     peso = _peso.value.trim().replace(",", ".").toDouble(),
                     percentualGordura = _percentualGordura.value.trim().replace(",", ".").toDouble(),
                     imc = _imc.value.trim().replace(",", ".").toDouble(),
                     nota = _nota.value.trim()
                 )
 
-                val idEdicao = _editingId.value
                 if (idEdicao == null) {
                     repository.create(avaliacao)
                     _snackbarEvent.emit("Avaliacao cadastrada com sucesso!")
@@ -173,6 +179,7 @@ class AvaliacoesViewModel(
                 }
 
                 clearForm()
+                loadAll()
                 _navigationEvent.emit(Unit)
             } catch (e: Exception) {
                 _snackbarEvent.emit("Erro ao salvar avaliacao: ${e.message}")
@@ -187,7 +194,7 @@ class AvaliacoesViewModel(
             _isLoading.value = true
             try {
                 repository.delete(id)
-                _avaliacoes.value = repository.getAll()
+                loadAll()
                 _snackbarEvent.emit("Avaliacao removida com sucesso!")
             } catch (e: Exception) {
                 _snackbarEvent.emit("Erro ao deletar avaliacao: ${e.message}")
@@ -199,12 +206,12 @@ class AvaliacoesViewModel(
 
     private fun formularioValido(): Boolean {
         return (_selectedAlunoId.value ?: 0) > 0 &&
-            _nomeAluno.value.isNotBlank() &&
-            isValidUiDate(_dataAvaliacao.value) &&
-            _peso.value.isNotBlank() && _peso.value.replace(",", ".").toDoubleOrNull() != null &&
-            _percentualGordura.value.isNotBlank() && _percentualGordura.value.replace(",", ".").toDoubleOrNull() != null &&
-            _imc.value.isNotBlank() && _imc.value.replace(",", ".").toDoubleOrNull() != null &&
-            _nota.value.isNotBlank()
+                _nomeAluno.value.isNotBlank() &&
+                isValidUiDate(_dataAvaliacao.value) &&
+                _peso.value.isNotBlank() && _peso.value.replace(",", ".").toDoubleOrNull() != null &&
+                _percentualGordura.value.isNotBlank() && _percentualGordura.value.replace(",", ".").toDoubleOrNull() != null &&
+                _imc.value.isNotBlank() && _imc.value.replace(",", ".").toDoubleOrNull() != null &&
+                _nota.value.isNotBlank()
     }
 
     fun clearForm() {
@@ -217,5 +224,19 @@ class AvaliacoesViewModel(
         _imc.value = ""
         _nota.value = ""
     }
-}
 
+    fun filteredAvaliacoes(): List<Avaliacao> {
+        val query = _searchQuery.value.trim()
+        val base = _avaliacoes.value
+        if (query.isBlank()) return base
+
+        val alunoId = query.toIntOrNull()
+
+        return base.filter { avaliacao ->
+            avaliacao.nomeAluno.contains(query, ignoreCase = true) ||
+                    avaliacao.nota.contains(query, ignoreCase = true) ||
+                    avaliacao.id?.toString() == query ||
+                    (alunoId != null && avaliacao.alunoId == alunoId)
+        }
+    }
+}

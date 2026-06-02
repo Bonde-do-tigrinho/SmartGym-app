@@ -33,7 +33,7 @@ data class RegisterRequest(
 data class AuthResponse(
     val sucesso: Boolean = true,
     val mensagem: String? = null,
-    val id: Long? = null,
+    val id: Int? = null,
     val email: String? = null
 )
 

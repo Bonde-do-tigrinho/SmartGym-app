@@ -21,10 +21,10 @@ class AgendamentosViewModel : ViewModel() {
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent = _snackbarEvent.asSharedFlow()
 
-    private val _aulasAgendadasIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _aulasAgendadasIds = MutableStateFlow<Set<Int>>(emptySet())
     val aulasAgendadasIds = _aulasAgendadasIds.asStateFlow()
 
-    fun carregarAgendamentosDoAluno(alunoId: Long) {
+    fun carregarAgendamentosDoAluno(alunoId: Int) {
         viewModelScope.launch {
             try {
                 val agendamentos = repository.getAgendamentosDoAluno(alunoId)
@@ -36,7 +36,7 @@ class AgendamentosViewModel : ViewModel() {
         }
     }
 
-    fun realizarAgendamento(alunoId: Long, aulaId: Long) {
+    fun realizarAgendamento(alunoId: Int, aulaId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -57,7 +57,7 @@ class AgendamentosViewModel : ViewModel() {
     private val _agendamentosDaAula = MutableStateFlow<List<Agendamento>>(emptyList())
     val agendamentosDaAula = _agendamentosDaAula.asStateFlow()
 
-    fun carregarAgendamentosDaAula(aulaId: Long) {
+    fun carregarAgendamentosDaAula(aulaId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -69,8 +69,6 @@ class AgendamentosViewModel : ViewModel() {
             }
         }
     }
-
-    // Útil para limpar o modal quando o professor fechar a lista de chamada
     fun limparListaDeChamada() {
         _agendamentosDaAula.value = emptyList()
     }
