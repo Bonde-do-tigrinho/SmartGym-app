@@ -35,7 +35,10 @@ fun NotificacoesScreen(
 ) {
     val notificacoes by viewModel.notificacoes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val colors = MaterialTheme.colorScheme
+
+    // VARIÁVEIS DE ESTADO PARA O MODAL DE CONFIRMAÇÃO
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var notificacaoParaApagar by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.carregarNotificacoes()
@@ -69,6 +72,7 @@ fun NotificacoesScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // CABEÇALHO DO APP
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -88,7 +92,7 @@ fun NotificacoesScreen(
                     )
                 }
 
-                // Botão "Criar Aviso"
+                // Botão "Criar Aviso" no topo direito
                 if (isAdmin) {
                     Button(
                         onClick = onNavigateToCriar,
@@ -139,7 +143,7 @@ fun NotificacoesScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    // Ellipse com a Categoria
+                                    // Pílula Ellipse com a Categoria
                                     Box(
                                         modifier = Modifier
                                             .background(Color(0xFFD9FF00), shape = RoundedCornerShape(50))
@@ -161,11 +165,15 @@ fun NotificacoesScreen(
                                                 onClick = { onNavigateToEditar(notificacao.id!!) },
                                                 modifier = Modifier.size(32.dp)
                                             ) {
-                                                Icon(Icons.Outlined.Edit, contentDescription = "Editar", tint = Color.Gray, modifier = Modifier.size(22.dp))
+                                                Icon(Icons.Outlined.Edit, contentDescription = "Editar", tint = Color.Gray, modifier = Modifier.size(20.dp))
                                             }
                                             IconButton(
-                                                onClick = { viewModel.apagarNotificacao(notificacao.id!!) },
-                                                modifier = Modifier.size(36.dp)
+                                                onClick = {
+                                                    // Em vez de apagar direto, abre o modal e guarda o ID
+                                                    notificacaoParaApagar = notificacao.id
+                                                    showDeleteDialog = true
+                                                },
+                                                modifier = Modifier.size(32.dp)
                                             ) {
                                                 Icon(
                                                     Icons.Outlined.Delete,
@@ -210,6 +218,56 @@ fun NotificacoesScreen(
                     }
                 }
             }
+        }
+
+        // ==========================================
+        // MODAL DE CONFIRMAÇÃO DE EXCLUSÃO
+        // ==========================================
+        if (showDeleteDialog && notificacaoParaApagar != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    // Se o utilizador clicar fora do modal, cancela a ação
+                    showDeleteDialog = false
+                    notificacaoParaApagar = null
+                },
+                title = {
+                    Text(
+                        text = "Excluir Aviso",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Tem a certeza de que deseja excluir este aviso? Esta ação não poderá ser desfeita.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            // Executa a exclusão e fecha o modal
+                            viewModel.apagarNotificacao(notificacaoParaApagar!!)
+                            showDeleteDialog = false
+                            notificacaoParaApagar = null
+                        }
+                    ) {
+                        Text("Sim, excluir", color = Color(0xFFD9FF00), fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            // Apenas fecha o modal
+                            showDeleteDialog = false
+                            notificacaoParaApagar = null
+                        }
+                    ) {
+                        Text("Cancelar", color = Color.White)
+                    }
+                }
+            )
         }
     }
 }
