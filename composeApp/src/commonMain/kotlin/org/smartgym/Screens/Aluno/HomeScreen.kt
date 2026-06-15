@@ -24,9 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.LocalDate
 import org.smartgym.components.InfoCard
 import org.smartgym.model.Adm.StatusMaquinaIot
 import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
@@ -61,21 +59,6 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         treinoViewModel.carregarMeuTreino()
-    }
-
-    LaunchedEffect(fichaState) {
-        val rotinaDias = fichaState?.rotinaDias ?: emptyList()
-        if (rotinaDias.isNotEmpty()) {
-            val agora = Clock.System.now()
-
-            val hoje = agora.toLocalDateTime(TimeZone.currentSystemDefault())
-            val diaDoAno = hoje.dayOfYear
-
-            val indice = diaDoAno % rotinaDias.size
-            val letraIdealDeHoje = rotinaDias[indice].letra
-
-            treinoViewModel.selecionarDia(letraIdealDeHoje)
-        }
     }
 
     LaunchedEffect(Unit){

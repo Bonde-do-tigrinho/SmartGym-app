@@ -40,7 +40,7 @@ fun AulasAlunoScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        aulasViewModel.carregarVisaoSemanal("2026-05-26")
+        aulasViewModel.carregarVisaoSemanal(null)
         agendamentosViewModel.carregarAgendamentosDoAluno(alunoIdLogado)
 
         launch { aulasViewModel.snackbarEvent.collectLatest { snackbarHostState.showSnackbar(it) } }
@@ -122,6 +122,7 @@ fun AulasAlunoScreen(
                             ) {
                                 Column {
                                     Text(aula.nome, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colors.onBackground)
+                                    val horaLimpa = if (aula.dataHoraInicio.contains("T")) aula.dataHoraInicio.substringAfter("T").take(5) else aula.dataHoraInicio.takeLast(8)
                                     Text("Início: ${aula.dataHoraInicio.takeLast(8)}", fontSize = 14.sp, color = colors.onSurfaceVariant)
                                     Text("Vagas: ${aula.capacidadeMaxima}", fontSize = 12.sp, color = SmartGymGreen)
                                 }

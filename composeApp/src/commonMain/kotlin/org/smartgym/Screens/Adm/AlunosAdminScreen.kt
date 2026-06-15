@@ -1,5 +1,6 @@
 package org.smartgym.Screens.Adm
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -16,13 +17,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,9 +31,12 @@ import org.smartgym.Screen
 import org.smartgym.model.Adm.Usuario
 import org.smartgym.viewModel.Adm.AlunosViewModel
 
-
 @Composable
-fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifier, viewModel: AlunosViewModel = viewModel()) {
+fun AlunosAdminScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    viewModel: AlunosViewModel = viewModel()
+) {
     val alunos by viewModel.alunosFiltrados.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -76,14 +74,14 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
         ) {
             Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black)
             Spacer(Modifier.width(8.dp))
-            Text("Novo Usuario", color = Color.Black, fontWeight = FontWeight.Bold)
+            Text("Novo Usuário", color = Color.Black, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         TextField(
             value = searchQuery,
-            onValueChange = {viewModel.onSearchQueryChange(it)},
+            onValueChange = { viewModel.onSearchQueryChange(it) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Buscar alunos...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -98,16 +96,14 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
         Spacer(modifier = Modifier.height(24.dp))
 
         if (isLoading) {
-            CircularProgressIndicator()
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFD9FF00))
+            }
         }
 
         errorMessage?.let {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = it,
-                color = Color.Red,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodyMedium)
         }
 
         Card(
@@ -116,38 +112,41 @@ fun AlunosAdminScreen(navController: NavController, modifier: Modifier = Modifie
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = CardDefaults.outlinedCardBorder()
         ) {
-                if (alunos.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center
+            if (alunos.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Nenhum aluno cadastrado.", color = Color.Gray)
+                }
+            } else {
+                Column(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
+                    Row(
+                        modifier = Modifier
+                            .width(1100.dp)
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Nenhum aluno cadastrado.", color = Color.Gray)
+                        Text("Nome", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(150.dp))
+                        Text("Contato", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
+                        Text("CPF", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(110.dp))
+                        Text("Treino / Foco", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(140.dp))
+                        Text("Vencimento", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(90.dp))
+                        Text("Status", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp))
+                        Text("Ações", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(90.dp))
                     }
-                }else {
-                    Column(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
-                        Row(
-                            modifier = Modifier
-                                .width(800.dp)
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Text("Nome", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(150.dp))
-                            Text("Contato", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
-                            Text("CPF", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(120.dp))
-                            Text("Plano", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp))
-                            Text("Status", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp))
-                            Text("Ações", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(90.dp))
-                        }
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant)
 
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                     LazyColumn(modifier = Modifier.heightIn(max = 500.dp)) {
                         items(alunos) { aluno ->
                             AlunoRow(
                                 usuario = aluno,
-                                onEditClick = {navController.navigate(Screen.EditarAluno.route + "/${aluno.id}")},
-                                onDeleteClick = {aluno.id?.let { viewModel.deletarAluno(it) }})
-                            Divider(
+                                onEditClick = { navController.navigate(Screen.EditarAluno.route + "/${aluno.id}") },
+                                onDeleteClick = { aluno.id?.let { viewModel.deletarAluno(it) } }
+                            )
+                            HorizontalDivider(
                                 color = MaterialTheme.colorScheme.outlineVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
@@ -165,13 +164,12 @@ fun AlunoRow(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Deletar Usuario") },
+            title = { Text("Deletar Usuário") },
             text = { Text("Tem certeza que deseja deletar ${usuario.nome}? Esta ação não pode ser desfeita.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -190,7 +188,9 @@ fun AlunoRow(
     }
 
     Row(
-        modifier = Modifier.width(800.dp).padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier
+            .width(1100.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -198,51 +198,54 @@ fun AlunoRow(
 
         Column(modifier = Modifier.width(180.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Email, null, modifier = Modifier.size(12.dp))
+                Icon(Icons.Default.Email, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(4.dp))
-                Text(usuario.email, fontSize = 11.sp)
+                Text(usuario.email, fontSize = 11.sp, maxLines = 1)
             }
+            Spacer(Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Phone, null, modifier = Modifier.size(12.dp))
+                Icon(Icons.Default.Phone, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(4.dp))
                 Text(usuario.telefone, fontSize = 11.sp)
             }
         }
 
-        Text(usuario.cpf, fontSize = 12.sp, modifier = Modifier.width(120.dp))
+        // CPF
+        Text(usuario.cpf, fontSize = 12.sp, modifier = Modifier.width(110.dp))
 
         Box(
             modifier = Modifier
-                .width(80.dp)
+                .width(100.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFD9FF00).copy(alpha = 0.3f))
+                .background(Color(0xFFD9FF00).copy(alpha = 0.15f))
                 .padding(vertical = 4.dp),
             contentAlignment = Alignment.Center
         ) {
-            usuario.plano?.let { planoObjeto ->
-                Text(
-                    text = planoObjeto.nome,
-                    fontSize = 11.sp,
-                    color = Color(0xFF9EBB00),
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
+            Text(
+                text = usuario.plano?.nome ?: "Sem Plano",
+                fontSize = 11.sp,
+                color = Color(0xFF9EBB00),
+                fontWeight = FontWeight.ExtraBold
+            )
         }
 
+        Text(usuario.planoVencimento ?: "N/A", fontSize = 12.sp, modifier = Modifier.width(90.dp))
+
+        // Status (Ativo/Inativo)
         val statusTexto = if (usuario.status) "Ativo" else "Inativo"
-        val statusCor = if (usuario.status) Color.Green else Color.Red
+        val statusCor = if (usuario.status) Color(0xFF4CAF50) else Color(0xFFF44336)
         Box(
             modifier = Modifier
                 .width(80.dp)
                 .clip(CircleShape)
-                .background(statusCor.copy(alpha = 0.3f))
+                .background(statusCor.copy(alpha = 0.15f))
                 .padding(vertical = 4.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(statusTexto, fontSize = 11.sp, color = statusCor, fontWeight = FontWeight.ExtraBold)
         }
 
-        Row(modifier = Modifier.width(90.dp)) {
+        Row(modifier = Modifier.width(90.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Default.Edit,
@@ -251,10 +254,7 @@ fun AlunoRow(
                     modifier = Modifier.size(18.dp)
                 )
             }
-            IconButton(
-                onClick = { showDeleteDialog = true },
-                modifier = Modifier.size(36.dp)
-            ) {
+            IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Deletar",
@@ -264,4 +264,8 @@ fun AlunoRow(
             }
         }
     }
+}
+
+fun String?.isNull_orBlank(): Boolean {
+    return this == null || this.trim().isBlank() || this.trim().lowercase() == "null"
 }

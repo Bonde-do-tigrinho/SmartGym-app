@@ -67,14 +67,21 @@ private val InterFont @Composable get() = FontFamily(
 @Composable
 fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewModel) {
     val searchQuery = viewModel.searchQuery.collectAsState()
-    val avaliacoes by viewModel.avaliacoes.collectAsState()
     var avaliacaoToDelete by remember { mutableStateOf<Avaliacao?>(null) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val avaliacoesRaw by viewModel.avaliacoes.collectAsState()
 
     LaunchedEffect(navBackStackEntry) {
         if (navBackStackEntry?.destination?.route == Screen.Avaliacoes.route) {
             viewModel.loadAll()
         }
+    }
+
+    LaunchedEffect(currentBackStackEntry) {
+        println("🔄 [UI] Tela de avaliações focada! Atualizando dados...")
+        viewModel.carregarAvaliacoes()
+        viewModel.loadAlunosResumo()
     }
 
     Box(
@@ -90,6 +97,9 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
 
+            val avaliacoesFiltradas = remember(avaliacoesRaw, searchQuery.value){
+                viewModel.filteredAvaliacoes()
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -173,8 +183,6 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
 
                     Spacer(modifier = Modifier.height(4.dp))
                 }
-
-                val avaliacoesFiltradas = viewModel.filteredAvaliacoes()
 
                 items(avaliacoesFiltradas, key = { it.id }) { avaliacao ->
                     AvaliacaoCard(

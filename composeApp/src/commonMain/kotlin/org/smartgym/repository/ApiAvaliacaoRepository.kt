@@ -127,8 +127,7 @@ class ApiAvaliacaoRepository : AvaliacaoRepository {
             emptyList()
         } else {
             try {
-                val listaMapeada = json.decodeFromString<List<Avaliacao>>(bodyText)
-                listaMapeada
+                json.decodeFromString<List<Avaliacao>>(bodyText)
             } catch (e: Exception) {
                 throw e
             }

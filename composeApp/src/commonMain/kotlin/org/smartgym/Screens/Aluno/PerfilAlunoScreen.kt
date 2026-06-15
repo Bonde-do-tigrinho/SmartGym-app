@@ -20,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
 
 @Composable
@@ -31,6 +34,8 @@ fun PerfilAlunoScreen(
     val perfil by viewModel.perfil.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val colors = MaterialTheme.colorScheme
+
+    var showFeatureNotImplementedDialog by remember { mutableStateOf(false) }
 
     val nome = perfil?.nome ?: "Usuário"
     val email = perfil?.email ?: ""
@@ -77,9 +82,12 @@ fun PerfilAlunoScreen(
         Text("Configurações da Conta", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.primary)
         Spacer(modifier = Modifier.height(16.dp))
 
-        PerfilOpcao(Icons.Default.Person, "Meus Dados", "Edite suas informações pessoais") {}
-        PerfilOpcao(Icons.Default.Lock, "Privacidade e Senha", "Altere sua senha de acesso") {}
-        PerfilOpcao(Icons.Default.Notifications, "Notificações", "Gerencie seus alertas de treino") {}
+        PerfilOpcao(Icons.Default.Person, "Meus Dados", "Edite suas informações pessoais") {
+            showFeatureNotImplementedDialog = true
+        }
+        PerfilOpcao(Icons.Default.Lock, "Privacidade e Senha", "Altere sua senha de acesso") {
+            showFeatureNotImplementedDialog = true
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -95,6 +103,26 @@ fun PerfilAlunoScreen(
         }
 
         Spacer(modifier = Modifier.height(80.dp))
+    }
+    if (showFeatureNotImplementedDialog) {
+        AlertDialog(
+            onDismissRequest = { showFeatureNotImplementedDialog = false },
+            title = {
+                Text("Em Desenvolvimento", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("Essa funcionalidade ainda não foi implementada no sistema SmartGym.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showFeatureNotImplementedDialog = false }
+                ) {
+                    Text("Entendido", color = colors.primary, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = colors.surface
+        )
     }
 }
 

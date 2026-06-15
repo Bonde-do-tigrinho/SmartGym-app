@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.smartgym.model.professor.Exercicio
 import org.smartgym.model.professor.FichaTreino
-import org.smartgym.model.professor.ExercicioFichaTreino
 import org.smartgym.repository.ApiExercicioRepository
 import org.smartgym.repository.FichaTreinoRepository
 
@@ -26,7 +25,7 @@ class TreinoViewModel(
 
     private val _exerciciosConcluidosIds = MutableStateFlow<Set<Int>>(emptySet())
     val exerciciosConcluidosIds = _exerciciosConcluidosIds.asStateFlow()
-    
+
     private val _letraSelecionada = MutableStateFlow("A") // Padrão começa no Treino A
     val letraSelecionada = _letraSelecionada.asStateFlow()
 
@@ -50,11 +49,32 @@ class TreinoViewModel(
                 _listaExerciciosCadastrados.value = exercicioRepository.getAll()
                 _fichaAtiva.value = repository.getMinhaFicha()
 
+                calcularESelecionarTreinoDoDia()
+
                 _exerciciosConcluidosIds.value = emptySet()
             } catch (e: Exception) {
                 _fichaAtiva.value = null
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+    private fun calcularESelecionarTreinoDoDia() {
+        val ficha = _fichaAtiva.value
+        val rotinaDias = ficha?.rotinaDias ?: emptyList()
+
+        if (rotinaDias.isNotEmpty()) {
+            try {
+                val milissegundosAgora = System.currentTimeMillis()
+
+                val totalDias = (milissegundosAgora / 86400000L).toInt()
+
+                val indice = totalDias % rotinaDias.size
+                val letraIdealDeHoje = rotinaDias[indice].letra
+
+                _letraSelecionada.value = letraIdealDeHoje
+            } catch (e: Exception) {
+                _letraSelecionada.value = rotinaDias.first().letra
             }
         }
     }
@@ -73,12 +93,12 @@ class TreinoViewModel(
     }
 
     fun alternarConclusaoExercicio(exercicioId: Int) {
-        val atuais = _exerciciosConcluidosIds.value.toMutableSet()
-        if (atuais.contains(exercicioId)) {
-            atuais.remove(exercicioId)
+        val comedians = _exerciciosConcluidosIds.value.toMutableSet()
+        if (comedians.contains(exercicioId)) {
+            comedians.remove(exercicioId)
         } else {
-            atuais.add(exercicioId)
+            comedians.add(exercicioId)
         }
-        _exerciciosConcluidosIds.value = atuais
+        _exerciciosConcluidosIds.value = comedians
     }
 }

@@ -25,12 +25,24 @@ class AulasColetivasViewModel : ViewModel() {
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent = _snackbarEvent.asSharedFlow()
 
-    private var dataBaseAtual: String = Clock.System.now().toString().substringBefore("T")
+    private var dataBaseAtual: String = ""
 
     fun carregarVisaoSemanal(novaDataIso: String? = null) {
         if (novaDataIso != null) {
             dataBaseAtual = novaDataIso
+        } else if (dataBaseAtual.isEmpty()) {
+            try {
+                val milissegundosAgora = System.currentTimeMillis()
+                val dataInstant = java.time.Instant.ofEpochMilli(milissegundosAgora)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate()
+
+                dataBaseAtual = dataInstant.toString()
+            } catch (e: Exception) {
+                dataBaseAtual = ""
+            }
         }
+
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -67,7 +79,7 @@ class AulasColetivasViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 repository.create(aula)
-                carregarVisaoSemanal()
+                carregarVisaoSemanal(dataBaseAtual)
                 _snackbarEvent.emit("Aula criada com sucesso!")
                 onSuccess()
             } catch (e: Exception) {
@@ -83,7 +95,7 @@ class AulasColetivasViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 repository.update(id, aula)
-                carregarVisaoSemanal()
+                carregarVisaoSemanal(dataBaseAtual)
                 _snackbarEvent.emit("Aula atualizada com sucesso!")
                 onSuccess()
             } catch (e: Exception) {
@@ -99,7 +111,7 @@ class AulasColetivasViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 repository.delete(id)
-                carregarVisaoSemanal()
+                carregarVisaoSemanal(dataBaseAtual)
                 _snackbarEvent.emit("Aula excluída com sucesso!")
             } catch (e: Exception) {
                 _snackbarEvent.emit("Erro ao excluir: ${e.message}")

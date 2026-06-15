@@ -142,12 +142,15 @@ class AvaliacoesViewModel(
 
     fun save() {
         viewModelScope.launch {
+            println("⚙️ [DEBUG] Botão salvar clicado! Validando formulário...")
             if (!formularioValido()) {
-                _snackbarEvent.emit("Preencha todos os campos. Peso, % Gordura e IMC devem ser numeros validos.")
+                println("🚨 [DEBUG] Formulário INVÁLIDO! Dados atuais: AlunoID=${_selectedAlunoId.value}, Data=${_dataAvaliacao.value}, Peso=${_peso.value}")
+                _snackbarEvent.emit("Preencha todos os campos corretamente.")
                 return@launch
             }
-
+            println("📡 [DEBUG] Formulário VÁLIDO! Disparando Ktor create()...")
             _isLoading.value = true
+
             try {
                 val idEdicao = _editingId.value
 
@@ -238,5 +241,9 @@ class AvaliacoesViewModel(
                     avaliacao.id?.toString() == query ||
                     (alunoId != null && avaliacao.alunoId == alunoId)
         }
+    }
+
+    fun carregarAvaliacoes() {
+        loadAll()
     }
 }

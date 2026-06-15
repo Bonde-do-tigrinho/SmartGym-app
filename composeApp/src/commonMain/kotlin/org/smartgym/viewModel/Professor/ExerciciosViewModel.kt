@@ -151,6 +151,10 @@ class ExerciciosViewModel() : ViewModel() {
         }
     }
 
+    fun carregarExercicios() {
+        loadAll()
+    }
+
     fun clearForm() {
         _editingId.value = null
         _nome.value = ""

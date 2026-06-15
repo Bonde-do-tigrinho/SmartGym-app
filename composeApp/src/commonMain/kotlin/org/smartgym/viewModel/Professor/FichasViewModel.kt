@@ -113,4 +113,8 @@ class FichasViewModel(
                     (alunoId != null && ficha.alunoId == alunoId)
         }
     }
+
+    fun carregarFichas() {
+        loadAll()
+    }
 }

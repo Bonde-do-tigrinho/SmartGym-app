@@ -90,12 +90,17 @@ import org.smartgym.viewModel.Adm.ProfessoresViewModel
 import org.smartgym.Screens.Adm.NotificacoesScreen
 import org.smartgym.Screens.Adm.FormularioNotificacaoScreen
 import org.smartgym.Screens.Adm.PlanosScreen
+import org.smartgym.Screens.Aluno.CompletarPerfilScreen
 import org.smartgym.Screens.Professor.EditarAvaliacaoScreen
 import org.smartgym.Screens.Professor.EditarFichaScreen
 import org.smartgym.Screens.Professor.VisualizarFichaScreen
+import org.smartgym.repository.ApiAlunoRepository
+import org.smartgym.repository.ApiAvaliacaoRepository
 import org.smartgym.repository.ApiExercicioRepository
 import org.smartgym.repository.ApiProfessorRepository
 import org.smartgym.viewModel.Adm.NotificacoesViewModel
+import org.smartgym.viewModel.AulasColetivasViewModel
+import org.smartgym.viewModel.aluno.CompletarPerfilViewModel
 
 val LocalSnackbar = compositionLocalOf<SnackbarHostState> {
     error("Nenhum SnackbarHostState fornecido")
@@ -626,8 +631,8 @@ fun NavContent(
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
     val maquinaIotViewModel = remember { MaquinaIotViewModel() }
-    val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
-    val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
+    val avaliacaoRepository = remember { ApiAvaliacaoRepository() }
+    val alunoRepository = remember { ApiAlunoRepository() }
     val exercicioRepository = remember { ApiExercicioRepository() }
     val fichaRepository = remember { ApiFichaTreinoRepository() }
     val avaliacoesViewModel = remember {AvaliacoesViewModel(avaliacaoRepository, alunoRepository)}
@@ -670,8 +675,8 @@ fun NavContent(
         modifier = modifier
     ) {
         composable("completar-perfil") {
-            val completarViewModel = remember { org.smartgym.viewModel.aluno.CompletarPerfilViewModel() }
-            org.smartgym.Screens.Aluno.CompletarPerfilScreen(
+            val completarViewModel = remember { CompletarPerfilViewModel() }
+            CompletarPerfilScreen(
                 navController = navController,
                 viewModel = completarViewModel
             )
@@ -715,7 +720,15 @@ fun NavContent(
             )
         }
 
-        composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
+        composable(Screen.HomeProfessor.route) {
+            HomeProfessorScreen(
+                navController = navController,
+                alunosViewModel = alunosViewModel,
+                fichasViewModel = fichasViewModel,
+                avaliacoesViewModel = avaliacoesViewModel,
+                exerciciosViewModel = exerciciosViewModel
+            )
+        }
         composable(Screen.Exercicios.route) {
             ExerciciosScreen(
                 navController = navController,
@@ -812,7 +825,11 @@ fun NavContent(
         }
 
         composable(Screen.AulasProfessor.route) { AulasProfessorScreen(navController = navController) }
-        composable(Screen.UpsertAulaProfessor.route) { UpsertAulaScreen(navController = navController) }
+        composable(Screen.UpsertAulaProfessor.route) { UpsertAulaScreen(
+            navController = navController,
+            perfilViewModel = AlunoPerfilViewModel(),
+            viewModel = AulasColetivasViewModel()
+        ) }
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
         composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, viewModel = alunosViewModel) }
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }

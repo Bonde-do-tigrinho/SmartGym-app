@@ -60,6 +60,7 @@ class AlunosViewModel : ViewModel() {
 
     init {
         carregarAlunos()
+        carregarPlanosDisponiveis()
     }
 
     private fun url(basePath: String, path: String = "") = ApiClient.getUrl("$basePath$path")

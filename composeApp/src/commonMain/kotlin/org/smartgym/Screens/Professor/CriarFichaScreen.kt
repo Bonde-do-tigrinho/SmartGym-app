@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -319,7 +322,6 @@ fun CriarFichaScreen(navController: NavController, viewModel: CriarFichaViewMode
     }
 }
 
-// 💡 NOVO: Card Compacto Adaptado com Chips Verdes do Tema e Inputs Alinhados do Backend
 @Composable
 fun ExercicioEditCardReal(
     nome: String,
@@ -337,7 +339,6 @@ fun ExercicioEditCardReal(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Chip verde suave marcando o nome do exercício selecionado igual ao mockup
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -352,39 +353,84 @@ fun ExercicioEditCardReal(
             }
         }
 
-        // Linha com as 3 entradas numéricas dinâmicas vinculadas ao ViewModel
+        // Linha com as 3 entradas numéricas usando BasicTextField (Livre de paddings invisíveis)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val fieldModifier = Modifier.weight(1f).height(46.dp)
+            val fieldModifier = Modifier.weight(1f).height(44.dp) // Pode até manter 44dp bem compacto que não corta!
 
-            TextField(
+            CompactNumericInputField(
                 value = config.series.let { if (it > 0) it.toString() else "" },
                 onValueChange = onUpdateSeries,
-                placeholder = { Text("Séries", fontSize = 12.sp) },
-                modifier = fieldModifier,
-                shape = RoundedCornerShape(8.dp),
-                colors = compactFieldColors(),
-                singleLine = true
+                placeholder = "Séries",
+                modifier = fieldModifier
             )
-            TextField(
+            CompactNumericInputField(
                 value = config.repeticoes.let { if (it > 0) it.toString() else "" },
                 onValueChange = onUpdateReps,
-                placeholder = { Text("Reps", fontSize = 12.sp) },
-                modifier = fieldModifier,
-                shape = RoundedCornerShape(8.dp),
-                colors = compactFieldColors(),
-                singleLine = true
+                placeholder = "Reps",
+                modifier = fieldModifier
             )
-            TextField(
+            CompactNumericInputField(
                 value = config.descansoSegundos.let { if (it > 0) it.toString() else "" },
                 onValueChange = onUpdateRest,
-                placeholder = { Text("Descanso", fontSize = 11.sp) },
-                modifier = fieldModifier,
-                shape = RoundedCornerShape(8.dp),
-                colors = compactFieldColors(),
-                singleLine = true
+                placeholder = "Descanso",
+                modifier = fieldModifier
             )
         }
     }
+}
+
+// 🎯 Componente Auxiliar Customizado de Alta Performance Visual
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompactNumericInputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier
+) {
+    val textStyle = LocalTextStyle.current.copy(
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onSurface,
+        fontFamily = InterFont
+    )
+
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        textStyle = textStyle,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        decorationBox = { innerTextField ->
+            TextFieldDefaults.DecorationBox(
+                value = value,
+                innerTextField = innerTextField,
+                enabled = true,
+                singleLine = true,
+                visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        fontSize = 12.sp,
+                        fontFamily = InterFont,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                )
+            )
+        }
+    )
 }
 
 @Composable
@@ -393,6 +439,7 @@ private fun compactFieldColors() = TextFieldDefaults.colors(
     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     focusedIndicatorColor = Color.Transparent,
     unfocusedIndicatorColor = Color.Transparent,
+    disabledIndicatorColor = Color.Transparent,
     focusedTextColor = MaterialTheme.colorScheme.onSurface,
     unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 )
