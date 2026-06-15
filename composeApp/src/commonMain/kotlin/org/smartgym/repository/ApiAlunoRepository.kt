@@ -4,6 +4,9 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import org.smartgym.model.professor.AlunoResumido
 import org.smartgym.network.ApiClient
 
@@ -40,6 +43,26 @@ class ApiAlunoRepository : AlunoRepository {
         }
 
         throw IllegalStateException("Nao foi possivel carregar alunos.", lastError)
+    }
+
+    override suspend fun getMeusAlunos(): List<AlunoResumido> {
+        return try {
+            val urlCompleta = ApiClient.getUrl("/api/professores/meus-alunos")
+
+            val response = client.get(urlCompleta) {
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.isSuccess()) {
+                response.body<List<AlunoResumido>>()
+            } else {
+                println("🚨 Erro na API ao buscar meus alunos: Status ${response.status}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
     }
 }
 

@@ -1,5 +1,7 @@
 ﻿package org.smartgym.Screens.Professor
+
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,11 +12,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -52,28 +60,35 @@ import smartgym.composeapp.generated.resources.Res
 import smartgym.composeapp.generated.resources.inter_bold
 import smartgym.composeapp.generated.resources.inter_regular
 import smartgym.composeapp.generated.resources.inter_semibold
+
 private val InterFont @Composable get() = FontFamily(
     Font(Res.font.inter_regular, FontWeight.Normal),
     Font(Res.font.inter_semibold, FontWeight.SemiBold),
     Font(Res.font.inter_bold, FontWeight.Bold)
 )
+
 @Composable
 fun FichasScreenReal(navController: NavController, viewModel: FichasViewModel, criarFichaViewModel: CriarFichaViewModel) {
     val fichas by viewModel.fichas.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     var fichaToDelete by remember { mutableStateOf<FichaTreino?>(null) }
+
     LaunchedEffect(Unit) {
         viewModel.loadAll()
         viewModel.loadAlunos()
     }
+
     val fichasFiltradas = fichas.filter { ficha ->
         val alunoNome = viewModel.alunoNome(ficha.alunoId)
         val query = searchQuery.trim()
-        ficha.focoTreino.contains(query, ignoreCase = true) ||
-            alunoNome.contains(query, ignoreCase = true) ||
-            ficha.alunoId.toString() == query ||
-            (ficha.id?.toString() == query)
+        val focosCompilados = ficha.rotinaDias.joinToString(" ") { it.focoTreino }
+
+        alunoNome.contains(query, ignoreCase = true) ||
+                focosCompilados.contains(query, ignoreCase = true) ||
+                ficha.alunoId.toString() == query ||
+                (ficha.id?.toString() == query)
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -174,8 +189,15 @@ fun FichasScreenReal(navController: NavController, viewModel: FichasViewModel, c
                             ficha = ficha,
                             alunoNome = viewModel.alunoNome(ficha.alunoId),
                             onEdit = {
-                                ficha.id?.let(criarFichaViewModel::prepareForEdit)
-                                navController.navigate(Screen.EditarFicha.route)
+                                ficha.id?.let { idDaFicha ->
+                                    criarFichaViewModel.prepareForEdit(idDaFicha)
+                                    navController.navigate("${Screen.EditarFicha.route}/$idDaFicha")
+                                }
+                            },
+                            onView = {
+                                ficha.id?.let { idDaFicha ->
+                                    navController.navigate("${Screen.VisualizarFicha.route}/$idDaFicha")
+                                }
                             },
                             onDelete = { fichaToDelete = ficha }
                         )
@@ -187,8 +209,11 @@ fun FichasScreenReal(navController: NavController, viewModel: FichasViewModel, c
             }
         }
         if (fichaToDelete != null) {
+            val nomeDoDono = viewModel.alunoNome(fichaToDelete!!.alunoId)
+            val identificadorTreino = fichaToDelete!!.rotinaDias.firstOrNull()?.focoTreino ?: "Sem Rotina"
+
             DeleteFichaDialogReal(
-                fichaNome = fichaToDelete!!.focoTreino,
+                fichaNome = "de $nomeDoDono ($identificadorTreino)",
                 onConfirm = {
                     fichaToDelete?.id?.let(viewModel::delete)
                     fichaToDelete = null
@@ -198,101 +223,160 @@ fun FichasScreenReal(navController: NavController, viewModel: FichasViewModel, c
         }
     }
 }
+
 @Composable
 fun FichaItemReal(
     ficha: FichaTreino,
     alunoNome: String,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onView: () -> Unit
 ) {
+    val totalExercicios = ficha.rotinaDias.sumOf { it.exercicios.size }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp), clip = false)
-            .background(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp))
-            .padding(16.dp)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp), clip = false)
+            .background(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)) // Borda dinâmica adaptativa
+            .padding(20.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = alunoNome,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontFamily = InterFont
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Box(
-                modifier = Modifier
-                    .background(color = SmartGymGreen, shape = RoundedCornerShape(6.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = ficha.focoTreino,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black,
-                    fontFamily = InterFont
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                InfoRowReal(label = "Criado em:", value = formatDateToUi(ficha.dataCriacao).ifBlank { "-" })
-                InfoRowReal(label = "Valido ate:", value = formatDateToUi(ficha.vigencia).ifBlank { "-" })
-                InfoRowReal(label = "Exercicios:", value = ficha.exercicios.size.toString())
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Spacer(modifier = Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text(
+                    text = alunoNome,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = InterFont
+                )
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Excluir Ficha",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (ficha.rotinaDias.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .background(color = SmartGymGreen, shape = CircleShape)
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Sem rotinas configuradas",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            fontFamily = InterFont
+                        )
+                    }
+                } else {
+                    ficha.rotinaDias.forEach { rotina ->
+                        Box(
+                            modifier = Modifier
+                                .background(color = SmartGymGreen, shape = CircleShape)
+                                .padding(horizontal = 14.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = "Treino ${rotina.letra} - ${rotina.focoTreino}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black,
+                                fontFamily = InterFont
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                InfoRowReal(label = "Válido até:", value = formatDateToUi(ficha.vigencia.orEmpty()).ifBlank { "-" })
+                InfoRowReal(label = "Exercícios:", value = totalExercicios.toString())
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+                OutlinedButton(
+                    onClick = onView,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline) // Borda sutil do Material
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Visibility,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Visualizar",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = InterFont
+                        )
+                    }
+                }
+
                 OutlinedButton(
                     onClick = onEdit,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp)
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
-                    Text(
-                        text = "Editar",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontFamily = InterFont
-                    )
-                }
-                OutlinedButton(
-                    onClick = onDelete,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "Excluir",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontFamily = InterFont
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Editar",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = InterFont
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 @Composable
 fun InfoRowReal(
     label: String,
@@ -300,24 +384,27 @@ fun InfoRowReal(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
             fontFamily = InterFont
         )
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = value,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontFamily = InterFont
         )
     }
 }
+
 @Composable
 fun DeleteFichaDialogReal(
     fichaNome: String,

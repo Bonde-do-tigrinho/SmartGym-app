@@ -4,8 +4,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Agendamento(
-    val id: Long? = null,
-    val alunoId: Long = 0L,
-    val aulaColetivaId: Long = 0L,
+    val id: Int? = null,
+    val alunoId: Int = 0,
+    val aulaColetivaId: Int = 0,
     val dataAgendamento: String? = null
 )

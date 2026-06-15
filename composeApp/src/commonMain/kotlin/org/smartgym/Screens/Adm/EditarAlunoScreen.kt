@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
+import org.smartgym.model.Adm.Plano
 import org.smartgym.viewModel.Adm.AlunosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,19 +39,22 @@ fun EditarAlunoScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    val listaPlanosReais by viewModel.planosDisponiveis.collectAsState()
+
     var nome by remember { mutableStateOf(aluno.nome) }
     var email by remember { mutableStateOf(aluno.email) }
-
     var cpfRaw by remember { mutableStateOf(aluno.cpf.filter { it.isDigit() }) }
     var telefoneRaw by remember { mutableStateOf(aluno.telefone.filter { it.isDigit() }) }
-
-    var planoSelecionado by remember { mutableStateOf(aluno.plano) }
-    var ativo by remember { mutableStateOf(aluno.status) }
+    var planoSelecionado by remember { mutableStateOf<Plano?>(aluno.plano) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var ativo by remember { mutableStateOf(aluno.status) }
 
-    val planos = listOf("Basic", "Premium", "Black")
+
+
 
     LaunchedEffect(Unit) {
+        viewModel.carregarPlanosDisponiveis()
+
         viewModel.navigationEvent.collectLatest {
             navController.popBackStack()
         }
@@ -123,26 +127,28 @@ fun EditarAlunoScreen(
                 expanded = dropdownExpanded,
                 onExpandedChange = { dropdownExpanded = it }
             ) {
-                planoSelecionado?.let {
-                    OutlinedTextField(
-                        value = it,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Selecione o plano") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
+                OutlinedTextField(
+                    value = planoSelecionado?.nome.orEmpty(),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Selecione o plano") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
                 ExposedDropdownMenu(
                     expanded = dropdownExpanded,
                     onDismissRequest = { dropdownExpanded = false }
                 ) {
-                    planos.forEach { plano ->
+                    listaPlanosReais.forEach { planoObjeto ->
                         DropdownMenuItem(
-                            text = { Text(plano) },
+                            text = {
+                                // Mostra o nome do plano e o valor formatado ao lado
+                                Text("${planoObjeto.nome} - R$ ${planoObjeto.valor}")
+                            },
                             onClick = {
-                                planoSelecionado = plano
+                                planoSelecionado = planoObjeto
                                 dropdownExpanded = false
                             }
                         )
@@ -203,7 +209,7 @@ fun EditarAlunoScreen(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
-                enabled = nome.isNotBlank() && email.isNotBlank() && planoSelecionado?.isNotBlank() == true
+                enabled = nome.isNotBlank() && email.isNotBlank() && planoSelecionado != null
             ) {
                 Text("Salvar Alterações", color = Color.Black, fontWeight = FontWeight.Bold)
             }

@@ -24,18 +24,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.smartgym.model.Adm.MaquinaIot
+import org.smartgym.model.Adm.StatusMaquinaIot
 import org.smartgym.model.aluno.Aparelho
 
 @Composable
-fun AparelhoCard(aparelho: Aparelho) {
+fun AparelhoCard(maquinaIot: MaquinaIot) {
     val colors = MaterialTheme.colorScheme
-    val isAvailable = aparelho.timeRemaining == null
 
-    // Cores condicionais baseadas no status
-    val statusColor = if (isAvailable) Color(0xFF00FF00) else Color(0xFFFF4444)
+    val isAvailable = maquinaIot.status == StatusMaquinaIot.LIVRE
+
+    val statusColor = if (isAvailable) Color(0xFF4CAF50) else Color(0xFFF44336)
     val statusText = if (isAvailable) "Disponível" else "Ocupado"
 
-    // Fundo levemente diferente se estiver ocupado (estética da imagem)
     val cardBg = if (isAvailable) colors.surface else colors.surface.copy(alpha = 0.8f)
 
     Card(
@@ -52,8 +53,9 @@ fun AparelhoCard(aparelho: Aparelho) {
                 Icon(Icons.Default.Wifi, contentDescription = null, tint = colors.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
             }
             Spacer(Modifier.height(12.dp))
-            Text(aparelho.name, color = colors.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text(aparelho.category, color = colors.onSurfaceVariant, fontSize = 14.sp)
+            
+            Text(maquinaIot.nome ?: "Aparelho Sem Nome", color = colors.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(maquinaIot.localizacao ?: "N/A", color = colors.onSurfaceVariant, fontSize = 14.sp)
         }
     }
 }

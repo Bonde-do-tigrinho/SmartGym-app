@@ -29,16 +29,16 @@ class ExerciciosViewModel() : ViewModel() {
     private val _grupoMuscular = MutableStateFlow("")
     val grupoMuscular: StateFlow<String> = _grupoMuscular.asStateFlow()
 
-    private val _maquinaId = MutableStateFlow<Long?>(null)
-    val maquinaId: StateFlow<Long?> = _maquinaId.asStateFlow()
+    private val _maquinaId = MutableStateFlow<Int?>(null)
+    val maquinaId: StateFlow<Int?> = _maquinaId.asStateFlow()
 
-    private val _editingId = MutableStateFlow<Long?>(null)
-    val editingId: StateFlow<Long?> = _editingId.asStateFlow()
+    private val _editingId = MutableStateFlow<Int?>(null)
+    val editingId: StateFlow<Int?> = _editingId.asStateFlow()
 
     fun updateNome(value: String) { _nome.value = value }
     fun updateDescricao(value: String) { _descricao.value = value }
     fun updateTipo(value: TipoExercicio) { _tipo.value = value }
-    fun updateMaquinaId(value: Long?) { _maquinaId.value = value }
+    fun updateMaquinaId(value: Int?) { _maquinaId.value = value }
 
     // --- NOVO: Função para atualizar o Grupo Muscular ---
     fun updateGrupoMuscular(value: String) { _grupoMuscular.value = value }
@@ -64,7 +64,7 @@ class ExerciciosViewModel() : ViewModel() {
         }
     }
 
-    fun loadById(id: Long) {
+    fun loadById(id: Int) {
         viewModelScope.launch {
             try {
                 repository.getById(id)?.let { exercicio ->
@@ -110,7 +110,7 @@ class ExerciciosViewModel() : ViewModel() {
         }
     }
 
-    private fun update(id: Long) { // Transformei em private pois a UI só deve chamar o "save"
+    private fun update(id: Int) { // Transformei em private pois a UI só deve chamar o "save"
         viewModelScope.launch {
             try {
                 val exercicio = Exercicio(
@@ -130,7 +130,7 @@ class ExerciciosViewModel() : ViewModel() {
         }
     }
 
-    fun delete(id: Long) {
+    fun delete(id: Int) {
         viewModelScope.launch {
             try {
                 repository.delete(id)
@@ -141,7 +141,7 @@ class ExerciciosViewModel() : ViewModel() {
         }
     }
 
-    fun loadByMaquina(maquinaId: Long) {
+    fun loadByMaquina(maquinaId: Int) {
         viewModelScope.launch {
             try {
                 _exercicios.value = repository.getByMaquina(maquinaId)
@@ -149,6 +149,10 @@ class ExerciciosViewModel() : ViewModel() {
                 println("Erro ao carregar exercícios por máquina: ${e.message}")
             }
         }
+    }
+
+    fun carregarExercicios() {
+        loadAll()
     }
 
     fun clearForm() {

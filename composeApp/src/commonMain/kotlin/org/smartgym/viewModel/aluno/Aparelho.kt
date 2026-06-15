@@ -1,25 +1,39 @@
 package org.smartgym.viewModel.aluno
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.smartgym.model.aluno.Aparelho
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import org.smartgym.model.Adm.MaquinaIot
+import org.smartgym.repository.ApiMaquinasIotRepository
 
 class AparelhosViewModel : ViewModel() {
-    private val _machines = MutableStateFlow<List<Aparelho>>(emptyList())
-    val machines: StateFlow<List<Aparelho>> = _machines
+
+    private val repository = ApiMaquinasIotRepository()
+
+    private val _maquinasIot = MutableStateFlow<List<MaquinaIot>>(emptyList())
+    val maquinasIot: StateFlow<List<MaquinaIot>> = _maquinasIot.asStateFlow()
 
     private val _selectedCategory = MutableStateFlow("Todos")
     val selectedCategory: StateFlow<String> = _selectedCategory
 
     init {
-        // Dados mockados baseados na sua imagem
-        _machines.value = listOf(
-            Aparelho(1, "Supino Reto", "Peito", 12, true),
-            Aparelho(2, "Supino Inclinado", "Peito", null, true),
-            Aparelho(3, "Crossover", "Peito", null, true),
-            Aparelho(4, "Puxada Frontal", "Costas", 8, true)
-        )
+        carregarMaquinasIot()
+    }
+
+    fun carregarMaquinasIot() {
+        viewModelScope.launch {
+            try {
+                 val listaDoBanco = repository.getAll()
+                 _maquinasIot.value = listaDoBanco.toMutableList()
+
+                println("📱 [ALUNO SCREEN] Loop rodou! Total de máquinas na UI do Aluno: ${_maquinasIot.value.size}")
+            } catch (e: Exception) {
+                println("🚨 [ERRO API ALUNO]: Falha ao buscar aparelhos do banco: ${e.message}")
+            }
+        }
     }
 
     fun selectCategory(category: String) {

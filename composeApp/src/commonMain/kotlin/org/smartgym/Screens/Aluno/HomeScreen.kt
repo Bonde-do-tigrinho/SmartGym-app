@@ -1,6 +1,5 @@
 package org.smartgym.Screens.Aluno
 
-import MaquinaViewModel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,39 +18,72 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.datetime.LocalDate
 import org.smartgym.components.InfoCard
+import org.smartgym.model.Adm.StatusMaquinaIot
+import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
+import org.smartgym.viewModel.aluno.AparelhosViewModel
 import org.smartgym.viewModel.aluno.TreinoViewModel
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    maquinaViewModel: MaquinaViewModel, // Atualizado para usar a sua MaquinaViewModel real
     treinoViewModel: TreinoViewModel,
-    nomeAluno: String
+    viewModel: AlunoPerfilViewModel,
+    temNotificacaoNova: Boolean,
+    aparelhosViewModel: AparelhosViewModel = viewModel { AparelhosViewModel() }
 ) {
     val colors = MaterialTheme.colorScheme
 
-    val listaDeMaquinas by maquinaViewModel.maquinas.collectAsState()
-    val aparelhosLivres = listaDeMaquinas.count { it.status.uppercase() == "LIVRE" }
-    val pessoasEmUso = listaDeMaquinas.size - aparelhosLivres
+    val perfil by viewModel.perfil.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Dispara a busca das máquinas ao abrir a Home
+    val fichaState by treinoViewModel.fichaAtiva.collectAsState()
+    val letraSelecionada by treinoViewModel.letraSelecionada.collectAsState()
+    val exerciciosDoDiaAtivo by treinoViewModel.exerciciosDoDiaAtivo.collectAsState()
+    val focoDoDiaAtivo by treinoViewModel.focoDoDiaAtivo.collectAsState()
+    val listaDeMaquinas by aparelhosViewModel.maquinasIot.collectAsState()
+
     LaunchedEffect(Unit) {
-        maquinaViewModel.carregarMaquinas()
+        while (true) {
+            aparelhosViewModel.carregarMaquinasIot()
+            kotlinx.coroutines.delay(3000L)
+        }
     }
 
-    // 2. DADOS TEMPORÁRIOS: Fixos até alinhar os detalhes de Treino e Plano com a equipe
-    val treinoAtual = "TREINO A"
-    val focoTreino = "Peito e Tríceps"
-    val qtdExercicios = 5
-    val professorNome = "Rafael Silva"
-    val professorNota = "4.9"
-    val planoVencimento = "15/04/2026"
-    val planoValor = "R$ 149,90"
+    LaunchedEffect(Unit) {
+        treinoViewModel.carregarMeuTreino()
+    }
+
+    LaunchedEffect(Unit){
+        if (perfil == null || perfil?.plano == null) {
+            viewModel.carregarPerfil()
+        }
+    }
+
+    if (isLoading) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = colors.primary)
+        }
+        return
+    }
+
+    val nome = perfil?.nome ?: "Usuário"
+    val professorNome = perfil?.professorNome
+    val planoNome = perfil?.plano?.nome
+    val planoValor = perfil?.plano?.valor?.let { valor ->
+        "R$ ${valor.toString().replace(".", ",")}${if (!valor.toString().contains(".")) ",00" else ""}"
+    } ?: ""
+    val planoVencimento = perfil?.planoVencimento ?: ""
+
+    val aparelhosLivresCount = listaDeMaquinas.count { it.status == StatusMaquinaIot.LIVRE }
+    val aparelhosEmUsoCount = listaDeMaquinas.count { it.status == StatusMaquinaIot.OCUPADA }
 
     Column(
         modifier = Modifier
@@ -66,61 +98,85 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("Boa tarde,", color = colors.onSurfaceVariant, fontSize = 16.sp)
+                Text("Ola,", color = colors.onSurfaceVariant, fontSize = 16.sp)
                 Text(
-                    nomeAluno.uppercase(),
+                    nome.uppercase(),
                     color = colors.onBackground,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
             IconButton(
-                onClick = { /* TODO: navController.navigate("notificacoes") */ },
+                onClick = { navController.navigate("notificacoes") },
                 modifier = Modifier.background(colors.surfaceVariant, CircleShape)
             ) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notificações", tint = colors.onSurface)
+                if (temNotificacaoNova) {
+                    BadgedBox(
+                        badge = { Badge(containerColor = Color(0xFFD9FF00)) }
+                    ) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notificações", tint = colors.onSurface)
+                    }
+                } else {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notificações", tint = colors.onSurface)
+                }
             }
         }
 
         Spacer(Modifier.height(24.dp))
 
-        // Card de Treino do Dia
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .clickable { /* TODO: navController.navigate("treino_detalhe") */ },
+                .clickable {
+                    if (fichaState?.rotinaDias?.isNotEmpty() == true) {
+                        navController.navigate("treino")
+                    }
+                },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             shape = RoundedCornerShape(24.dp)
         ) {
             Row(modifier = Modifier.padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                     Text(
                         "TREINO DE HOJE",
                         color = colors.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        treinoAtual,
+                        text = if (fichaState != null) "TREINO $letraSelecionada" else "SEM TREINO",
                         color = colors.onSurface,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
-                    Text(focoTreino, color = colors.onSurfaceVariant)
-                    Text("$qtdExercicios exercícios", color = colors.onSurfaceVariant)
+                    Text(
+                        text = if (fichaState != null) "Foco: $focoDoDiaAtivo" else "Nenhuma ficha ativa",
+                        color = colors.onSurfaceVariant,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "${exerciciosDoDiaAtivo.size} exercícios cadastrados",
+                        color = colors.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
                 }
                 Box(
                     modifier = Modifier
                         .size(60.dp)
-                        .background(colors.primary, CircleShape),
+                        .background(colors.primary, CircleShape)
+                        .align(Alignment.CenterVertically),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        treinoAtual.last().toString(),
+                        text = if (fichaState != null) letraSelecionada else "?",
                         color = colors.onPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 26.sp
                     )
                 }
             }
@@ -128,7 +184,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Cards de Aparelhos e Pessoas (DADOS REAIS DA API)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(modifier = Modifier
                 .weight(1f)
@@ -137,7 +192,7 @@ fun HomeScreen(
             ) {
                 InfoCard(
                     icon = Icons.Default.Bolt,
-                    value = aparelhosLivres.toString(),
+                    value = aparelhosLivresCount.toString(),
                     label = "Aparelhos livres",
                     iconColor = colors.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -146,11 +201,11 @@ fun HomeScreen(
             Box(modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
-                .clickable { /* TODO: navController.navigate("ocupacao") */ }
+                .clickable { navController.navigate("aparelhos") }
             ) {
                 InfoCard(
                     icon = Icons.Default.Groups,
-                    value = pessoasEmUso.toString(),
+                    value = aparelhosEmUsoCount.toString(),
                     label = "Em uso agora",
                     iconColor = colors.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -166,16 +221,12 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("SEU PROFESSOR", color = colors.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            TextButton(onClick = { /* TODO: navController.navigate("professores") */ }) {
-                Text("Ver todos >", color = colors.primary, fontSize = 14.sp)
-            }
         }
 
-        // Card do Professor
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* TODO: navController.navigate("professor_detalhe") */ },
+                .clickable { /* TODO */ },
             colors = CardDefaults.cardColors(containerColor = colors.surface),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -190,25 +241,33 @@ fun HomeScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        professorNome.split(" ").mapNotNull { it.firstOrNull() }.joinToString("").take(2),
+                        if (professorNome != null)
+                            professorNome.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
+                        else "?",
                         color = colors.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(professorNome, color = colors.onSurface, fontWeight = FontWeight.Bold)
-                    Text("Musculação", color = colors.onSurfaceVariant, fontSize = 14.sp)
-                    Text("Seg-Sáb 08h-14h", color = colors.onSurfaceVariant, fontSize = 12.sp)
+                    Text(
+                        professorNome ?: "Nenhum professor vinculado",
+                        color = if (professorNome != null) colors.onSurface else colors.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (professorNome != null) {
+                        Text("Musculação", color = colors.onSurfaceVariant, fontSize = 14.sp)
+                        Text("Seg-Sáb 08h-14h", color = colors.onSurfaceVariant, fontSize = 12.sp)
+                    }
                 }
-                Icon(Icons.Default.Star, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
-                Text(" $professorNota", color = colors.onSurface, fontWeight = FontWeight.Bold)
+                if (professorNome != null) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+                }
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // Card do Plano
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -221,26 +280,32 @@ fun HomeScreen(
                 modifier = Modifier.padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = colors.primary,
-                        modifier = Modifier.size(32.dp)
+                Icon(
+                    Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = colors.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        planoNome ?: "Sem plano ativo",
+                        color = if (planoNome != null) colors.onSurface else colors.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
                     )
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Plano Premium", color = colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    if (planoVencimento.isNotBlank()) {
                         Text("Vence em $planoVencimento", color = colors.onSurfaceVariant, fontSize = 12.sp)
                     }
                 }
-                Spacer(Modifier.weight(1f))
-                Text(
-                    planoValor,
-                    color = colors.primary,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp
-                )
+                if (planoValor.isNotBlank()) {
+                    Text(
+                        planoValor,
+                        color = colors.primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp
+                    )
+                }
             }
         }
 

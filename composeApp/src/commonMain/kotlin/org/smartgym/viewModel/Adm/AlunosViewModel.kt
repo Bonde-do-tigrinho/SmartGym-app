@@ -24,6 +24,7 @@ import org.smartgym.network.ApiClient
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import org.smartgym.model.Adm.Plano
 
 class AlunosViewModel : ViewModel() {
 
@@ -33,6 +34,9 @@ class AlunosViewModel : ViewModel() {
 
     private val _alunos = MutableStateFlow<List<Usuario>>(emptyList())
     val alunos: StateFlow<List<Usuario>> = _alunos.asStateFlow()
+
+    private val _planosDisponiveis = MutableStateFlow<List<Plano>>(emptyList())
+    val planosDisponiveis: StateFlow<List<Plano>> = _planosDisponiveis.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -54,7 +58,10 @@ class AlunosViewModel : ViewModel() {
     private val _navigationEvent = MutableSharedFlow<Unit>()
     val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
-    // BLOCO INIT REMOVIDO DAQUI! 🚀
+    init {
+        carregarAlunos()
+        carregarPlanosDisponiveis()
+    }
 
     private fun url(basePath: String, path: String = "") = ApiClient.getUrl("$basePath$path")
 
@@ -120,7 +127,7 @@ class AlunosViewModel : ViewModel() {
         email: String,
         telefone: String,
         cpf: String,
-        plano: String,
+        plano: Plano?,
         status: Boolean
     ) {
         viewModelScope.launch {
@@ -196,6 +203,24 @@ class AlunosViewModel : ViewModel() {
                 _errorMessage.value = "Erro ao editar usuario: ${e.message}"
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    fun carregarPlanosDisponiveis() {
+        viewModelScope.launch {
+            try {
+                val result: List<Plano> = executeAlunoRequest { basePath ->
+                    // Ajuste o endpoint caso no Spring seja diferente (ex: "/api/planos")
+                    val urlPlanos = ApiClient.getUrl("/api/planos")
+                    println("📡 [KTOR GET] Buscando planos em: $urlPlanos")
+                    client.get(urlPlanos).body()
+                }
+                println("✅ PLANOS CARREGADOS DO BANCO: $result")
+                _planosDisponiveis.value = result
+            } catch (e: Exception) {
+                println("🚨 ERRO AO CARREGAR PLANOS: ${e.message}")
+                e.printStackTrace()
             }
         }
     }

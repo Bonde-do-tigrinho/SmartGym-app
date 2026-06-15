@@ -1,21 +1,21 @@
 package org.smartgym
 
-import MaquinaIotViewModel
-import MaquinaViewModel
+import org.smartgym.viewModel.Adm.MaquinaIotViewModel
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.SupervisorAccount
@@ -26,7 +26,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.Assignment
+import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -78,9 +79,7 @@ import org.smartgym.viewModel.Adm.AlunosViewModel
 import org.smartgym.viewModel.Professor.ExerciciosViewModel
 import org.smartgym.viewModel.Professor.FichasViewModel
 import org.smartgym.Screens.Adm.EditarProfessorScreen
-import org.smartgym.Screens.Adm.MaquinasAdminScreen
 import org.smartgym.Screens.Adm.MaquinasIotAdminScreen
-import org.smartgym.Screens.Professor.FichasScreen
 import org.smartgym.Screens.Adm.NovoProfessorScreen
 import org.smartgym.Screens.Adm.ProfessoresAdminScreen
 import org.smartgym.viewModel.Professor.AvaliacoesViewModel
@@ -90,18 +89,28 @@ import org.smartgym.viewModel.Adm.PlanoViewModel
 import org.smartgym.viewModel.Adm.ProfessoresViewModel
 import org.smartgym.Screens.Adm.NotificacoesScreen
 import org.smartgym.Screens.Adm.FormularioNotificacaoScreen
+import org.smartgym.Screens.Adm.PlanosScreen
+import org.smartgym.Screens.Aluno.CompletarPerfilScreen
+import org.smartgym.Screens.Professor.EditarAvaliacaoScreen
+import org.smartgym.Screens.Professor.EditarFichaScreen
+import org.smartgym.Screens.Professor.VisualizarFichaScreen
+import org.smartgym.repository.ApiAlunoRepository
+import org.smartgym.repository.ApiAvaliacaoRepository
+import org.smartgym.repository.ApiExercicioRepository
+import org.smartgym.repository.ApiProfessorRepository
 import org.smartgym.viewModel.Adm.NotificacoesViewModel
+import org.smartgym.viewModel.AulasColetivasViewModel
+import org.smartgym.viewModel.aluno.CompletarPerfilViewModel
 
-// 1. A sua tomada do Snackbar Global mantida perfeitamente
 val LocalSnackbar = compositionLocalOf<SnackbarHostState> {
     error("Nenhum SnackbarHostState fornecido")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
-    // ViewModel de Notificações instanciada
+fun AppNavigation(userRole: UserRole, onLogout: () -> Unit, perfilCompleto: Boolean) {
     val notificacoesViewModel = remember { NotificacoesViewModel() }
+
     val listaNotificacoes by notificacoesViewModel.notificacoes.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -114,10 +123,8 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // 👇 MERGE DOS MENUS DO ALUNO: Notificações (Outra Pessoa) + Aulas (Você)
     val rotasComBottomNav = listOf(
         Screen.HomeAluno.route,
-        Screen.Notificacoes.route,
         Screen.Aparelhos.route,
         Screen.Treino.route,
         Screen.AulasAluno.route,
@@ -129,7 +136,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val items = listOf(
         Screen.HomeAluno,
-        Screen.Notificacoes,
         Screen.Aparelhos,
         Screen.Treino,
         Screen.AulasAluno,
@@ -139,7 +145,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val labels = mapOf(
         Screen.HomeAluno.route to "Home",
-        Screen.Notificacoes.route to "Avisos",
         Screen.Aparelhos.route to "Aparelhos",
         Screen.Treino.route to "Treino",
         Screen.AulasAluno.route to "Aulas",
@@ -149,7 +154,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val icons = mapOf(
         Screen.HomeAluno.route to Icons.Rounded.Home,
-        Screen.Notificacoes.route to Icons.Rounded.Notifications,
         Screen.Aparelhos.route to Icons.Rounded.FitnessCenter,
         Screen.Treino.route to Icons.AutoMirrored.Rounded.Assignment,
         Screen.AulasAluno.route to Icons.Rounded.DateRange,
@@ -159,7 +163,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 👇 SEU SNACKBAR GLOBAL ENVOLVENDO A LÓGICA DE PAPÉIS
     CompositionLocalProvider(LocalSnackbar provides snackbarHostState) {
         when (userRole) {
             UserRole.ALUNO -> {
@@ -193,15 +196,34 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                             }
                                         },
                                         icon = {
+                                            val iconModifier = Modifier.size(15.dp)
+                                            val iconVector = icons[screen.route] ?: Icons.Default.Home
+                                            val iconTint = if (selected) MaterialTheme.colorScheme.primary else TextGray
+
                                             if (screen.route == Screen.Notificacoes.route && temAvisoNovo) {
-                                                BadgedBox(badge = { Badge(containerColor = Color(0xFFD9FF00)) }) {
-                                                    Icon(icons[screen.route] ?: Icons.Default.Home, contentDescription = null, tint = if (selected) MaterialTheme.colorScheme.primary else TextGray)
+                                                BadgedBox(badge = { Badge(containerColor = Color(0xFFD9FF00), modifier = Modifier.size(6.dp)) }) {
+                                                    Icon(
+                                                        iconVector,
+                                                        contentDescription = null,
+                                                        tint = iconTint,
+                                                        modifier = iconModifier
+                                                    )
                                                 }
                                             } else {
-                                                Icon(icons[screen.route] ?: Icons.Default.Home, contentDescription = null, tint = if (selected) MaterialTheme.colorScheme.primary else TextGray)
+                                                Icon(
+                                                    iconVector,
+                                                    contentDescription = null,
+                                                    tint = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                                )
                                             }
                                         },
-                                        label = { Text(labels[screen.route] ?: "", color = if (selected) MaterialTheme.colorScheme.primary else TextGray) },
+                                        label = {
+                                            Text(
+                                                labels[screen.route] ?: "",
+                                                fontSize = 10.sp,
+                                                color = if (selected) MaterialTheme.colorScheme.primary else TextGray
+                                            )
+                                        },
                                         colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
                                     )
                                 }
@@ -214,8 +236,10 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         userRole = userRole,
                         onLogout = onLogout,
                         modifier = Modifier.padding(padding),
+                        perfilCompleto = perfilCompleto,
                         snackbarHostState = snackbarHostState,
-                        notificacoesViewModel = notificacoesViewModel
+                        notificacoesViewModel = notificacoesViewModel,
+                        temNotificacaoNova = temAvisoNovo
                     )
                 }
             }
@@ -223,7 +247,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
             UserRole.PROFESSOR -> {
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
-                // 👇 MERGE DOS MENUS DO PROFESSOR: Notificações + AulasProfessor
                 val professorItems = listOf(
                     Screen.HomeProfessor,
                     Screen.Notificacoes,
@@ -263,11 +286,28 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     drawerContent = {
                         ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
                             Spacer(Modifier.height(24.dp))
-                            Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "GYM",
+                                    modifier = Modifier.padding(1.dp),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
+                                Text(
+                                    ".",
+                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
-                            Text("Área do Instrutor", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "Área do Instrutor",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                             Spacer(Modifier.height(8.dp))
 
@@ -275,14 +315,25 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                 val selected = currentRoute == screen.route
                                 NavigationDrawerItem(
                                     shape = RoundedCornerShape(15.dp),
-                                    label = { Text(professorLabels[screen.route] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                    label = {
+                                        Text(
+                                            professorLabels[screen.route] ?: "",
+                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                                        )
+                                    },
                                     icon = {
                                         if (screen.route == Screen.Notificacoes.route && temAvisoNovo) {
                                             BadgedBox(badge = { Badge(containerColor = Color(0xFFD9FF00)) }) {
-                                                Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null)
+                                                Icon(
+                                                    professorIcons[screen.route] ?: Icons.Default.Home,
+                                                    contentDescription = null
+                                                )
                                             }
                                         } else {
-                                            Icon(professorIcons[screen.route] ?: Icons.Default.Home, contentDescription = null)
+                                            Icon(
+                                                professorIcons[screen.route] ?: Icons.Default.Home,
+                                                contentDescription = null
+                                            )
                                         }
                                     },
                                     selected = selected,
@@ -315,7 +366,10 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                     onLogout()
                                 },
                                 modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
-                                colors = NavigationDrawerItemDefaults.colors(unselectedTextColor = MaterialTheme.colorScheme.error, unselectedIconColor = MaterialTheme.colorScheme.error)
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    unselectedTextColor = MaterialTheme.colorScheme.error,
+                                    unselectedIconColor = MaterialTheme.colorScheme.error
+                                )
                             )
                         }
                     }
@@ -324,18 +378,39 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         containerColor = MaterialTheme.colorScheme.background,
                         snackbarHost = {
                             SnackbarHost(hostState = snackbarHostState) { data ->
-                                Snackbar(snackbarData = data, containerColor = Color(0xFF1A1A1A), contentColor = Color(0xFFD9FF00), shape = RoundedCornerShape(12.dp))
+                                Snackbar(
+                                    snackbarData = data,
+                                    containerColor = Color(0xFF1A1A1A),
+                                    contentColor = Color(0xFFD9FF00),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
                             }
                         },
                         topBar = {
                             TopAppBar(
                                 title = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                        Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                        Text(
+                                            "GYM",
+                                            modifier = Modifier.padding(1.dp),
+                                            style = MaterialTheme.typography.titleLarge,
+                                            color = MaterialTheme.colorScheme.onSecondary
+                                        )
+                                        Text(
+                                            ".",
+                                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 },
-                                navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
+                                navigationIcon = {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(
+                                            Icons.Default.Menu,
+                                            contentDescription = "Menu"
+                                        )
+                                    }
+                                },
                                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                                 modifier = Modifier.shadow(elevation = 5.dp)
                             )
@@ -346,8 +421,10 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             userRole = userRole,
                             onLogout = onLogout,
                             modifier = Modifier.padding(padding),
+                            perfilCompleto = true,
                             snackbarHostState = snackbarHostState,
-                            notificacoesViewModel = notificacoesViewModel
+                            notificacoesViewModel = notificacoesViewModel,
+                            temNotificacaoNova = temAvisoNovo
                         )
                     }
                 }
@@ -364,7 +441,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     Screen.ProfessoresAdmin.route,
                     Screen.UnidadesAdmin.route,
                     "telaPlanos",
-                    Screen.MaquinasAdmin.route,
                     Screen.MaquinasIotAdmin.route,
                 )
 
@@ -374,8 +450,7 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     Screen.AlunosAdmin.route to "Alunos",
                     Screen.UnidadesAdmin.route to "Unidades",
                     "telaPlanos" to "Planos",
-                    Screen.MaquinasAdmin.route to "Máquinas",
-                    Screen.MaquinasIotAdmin.route to "Máquinas IOTs",
+                    Screen.MaquinasIotAdmin.route to "Máquinas",
                     Screen.ProfessoresAdmin.route to "Professores",
                 )
 
@@ -385,7 +460,6 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     Screen.AlunosAdmin.route to Icons.Outlined.People,
                     Screen.UnidadesAdmin.route to Icons.Outlined.Apartment,
                     "telaPlanos" to Icons.AutoMirrored.Rounded.Assignment,
-                    Screen.MaquinasAdmin.route to Icons.Outlined.FitnessCenter,
                     Screen.MaquinasIotAdmin.route to Icons.Outlined.Sensors,
                     Screen.ProfessoresAdmin.route to Icons.Outlined.SupervisorAccount,
                 )
@@ -395,11 +469,28 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                     drawerContent = {
                         ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
                             Spacer(Modifier.height(24.dp))
-                            Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "GYM",
+                                    modifier = Modifier.padding(1.dp),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
+                                Text(
+                                    ".",
+                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
-                            Text("Área do Gerente", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "Área do Gerente",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                             Spacer(Modifier.height(8.dp))
 
@@ -407,7 +498,12 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                                 val selected = currentRoute == rota
                                 NavigationDrawerItem(
                                     shape = RoundedCornerShape(15.dp),
-                                    label = { Text(adminLabels[rota] ?: "", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)) },
+                                    label = {
+                                        Text(
+                                            adminLabels[rota] ?: "",
+                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                                        )
+                                    },
                                     icon = {
                                         if (rota == Screen.Notificacoes.route && temAvisoNovo) {
                                             BadgedBox(badge = { Badge(containerColor = Color(0xFFD9FF00)) }) {
@@ -438,14 +534,17 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
 
                             NavigationDrawerItem(
                                 label = { Text("Sair", fontWeight = FontWeight.SemiBold) },
-                                icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
+                                icon = { Icon(Icons.Default.Logout, contentDescription = null) },
                                 selected = false,
                                 onClick = {
                                     scope.launch { drawerState.close() }
                                     onLogout()
                                 },
                                 modifier = Modifier.padding(horizontal = 25.dp, vertical = 2.dp),
-                                colors = NavigationDrawerItemDefaults.colors(unselectedTextColor = MaterialTheme.colorScheme.error, unselectedIconColor = MaterialTheme.colorScheme.error)
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    unselectedTextColor = MaterialTheme.colorScheme.error,
+                                    unselectedIconColor = MaterialTheme.colorScheme.error
+                                )
                             )
                         }
                     }
@@ -454,18 +553,42 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                         containerColor = MaterialTheme.colorScheme.background,
                         snackbarHost = {
                             SnackbarHost(hostState = snackbarHostState) { data ->
-                                Snackbar(snackbarData = data, containerColor = Color(0xFF1A1A1A), contentColor = Color(0xFFD9FF00), shape = RoundedCornerShape(12.dp))
+                                Snackbar(
+                                    snackbarData = data,
+                                    containerColor = Color(0xFF1A1A1A),
+                                    contentColor = Color(0xFFD9FF00),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
                             }
                         },
                         topBar = {
                             TopAppBar(
                                 title = {
-                                    Row(modifier = Modifier.padding(horizontal = 0.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("GYM", modifier = Modifier.padding(1.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondary)
-                                        Text(".", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 0.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "GYM",
+                                            modifier = Modifier.padding(1.dp),
+                                            style = MaterialTheme.typography.titleLarge,
+                                            color = MaterialTheme.colorScheme.onSecondary
+                                        )
+                                        Text(
+                                            ".",
+                                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 },
-                                navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
+                                navigationIcon = {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(
+                                            Icons.Default.Menu,
+                                            contentDescription = "Menu"
+                                        )
+                                    }
+                                },
                                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                                 modifier = Modifier.shadow(elevation = 5.dp)
                             )
@@ -475,9 +598,11 @@ fun AppNavigation(userRole: UserRole, onLogout: () -> Unit) {
                             navController = navController,
                             userRole = userRole,
                             onLogout = onLogout,
+                            perfilCompleto = true,
                             modifier = Modifier.padding(padding),
                             snackbarHostState = snackbarHostState,
-                            notificacoesViewModel = notificacoesViewModel
+                            notificacoesViewModel = notificacoesViewModel,
+                            temNotificacaoNova = temAvisoNovo
                         )
                     }
                 }
@@ -492,28 +617,34 @@ fun NavContent(
     userRole: UserRole,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
+    perfilCompleto: Boolean,
     snackbarHostState: SnackbarHostState,
-    notificacoesViewModel: NotificacoesViewModel
+    notificacoesViewModel: NotificacoesViewModel,
+    temNotificacaoNova: Boolean
 ) {
+
+    val fichaTreinoRepository = remember { ApiFichaTreinoRepository() }
+    val apiExercicioRepository = remember { ApiExercicioRepository() }
     val planosViewModel = remember { PlanoViewModel() }
-    val treinoViewModel = remember { TreinoViewModel() }
+    val treinoViewModel = remember { TreinoViewModel(fichaTreinoRepository, apiExercicioRepository) }
     val aparelhosViewModel = remember { AparelhosViewModel() }
     val alunosViewModel = remember { AlunosViewModel() }
     val exerciciosViewModel = remember { ExerciciosViewModel() }
-    val maquinaViewModel = remember { MaquinaViewModel() }
     val maquinaIotViewModel = remember { MaquinaIotViewModel() }
-    val avaliacaoRepository = remember { org.smartgym.repository.ApiAvaliacaoRepository() }
-    val alunoRepository = remember { org.smartgym.repository.ApiAlunoRepository() }
-    val exercicioRepository = remember { org.smartgym.repository.ApiExercicioRepository() }
+    val avaliacaoRepository = remember { ApiAvaliacaoRepository() }
+    val alunoRepository = remember { ApiAlunoRepository() }
+    val exercicioRepository = remember { ApiExercicioRepository() }
     val fichaRepository = remember { ApiFichaTreinoRepository() }
-    val avaliacoesViewModel = remember { AvaliacoesViewModel(avaliacaoRepository, alunoRepository) }
+    val avaliacoesViewModel = remember {AvaliacoesViewModel(avaliacaoRepository, alunoRepository)}
     val fichasViewModel = remember { FichasViewModel(fichaRepository, alunoRepository) }
     val criarFichaViewModel = remember { CriarFichaViewModel(alunoRepository, exercicioRepository, fichaRepository) }
-    val professoresViewModel = remember { ProfessoresViewModel() }
-
+    val professorRepository = remember { ApiProfessorRepository() }
+    val professoresViewModel = remember { ProfessoresViewModel(professorRepository) }
+    val alunoPerfilViewModel = remember { AlunoPerfilViewModel() }
     var notificacaoEmEdicaoId by remember { mutableStateOf<Int?>(null) }
+    val perfilUsuario by alunoPerfilViewModel.perfil.collectAsState()
+    val alunoIdReal = perfilUsuario?.id ?: 0
 
-    // Manti os LaunchedEffects originais para compatibilidade
     LaunchedEffect(Unit) {
         alunosViewModel.snackbarEvent.collectLatest { message ->
             snackbarHostState.showSnackbar(message)
@@ -532,68 +663,233 @@ fun NavContent(
         }
     }
 
+    val startDest = when (userRole) {
+        UserRole.ALUNO -> if (perfilCompleto) Screen.HomeAluno.route else "completar-perfil"
+        UserRole.PROFESSOR -> Screen.HomeProfessor.route
+        UserRole.ADMIN -> Screen.HomeAdmin.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = when (userRole) {
-            UserRole.ALUNO -> Screen.HomeAluno.route
-            UserRole.PROFESSOR -> Screen.HomeProfessor.route
-            UserRole.ADMIN -> Screen.HomeAdmin.route
-        },
+        startDestination = startDest,
         modifier = modifier
     ) {
-        // 👇 MISTURA DE HOME (Usando o seu construtor + Dados de mock do outro dev caso precise)
-        composable(Screen.HomeAluno.route) {
-            // Se o outro Dev substituiu o seu construtor, passamos o UserHomeData, senão ajustamos.
-            // Para não quebrar a sua Home, mantemos os parametros de ViewModel caso sua HomeScreen os espere.
-            HomeScreen(
+        composable("completar-perfil") {
+            val completarViewModel = remember { CompletarPerfilViewModel() }
+            CompletarPerfilScreen(
                 navController = navController,
-                maquinaViewModel = maquinaViewModel,
-                treinoViewModel = treinoViewModel,
-                nomeAluno = "Nicolas"
+                viewModel = completarViewModel
             )
         }
 
-        composable(Screen.Aparelhos.route) { AparelhosScreen(navController = navController, viewModel = aparelhosViewModel) }
-        composable(Screen.Treino.route) { TreinoScreen(navController = navController, viewModel = treinoViewModel) }
+        composable(Screen.HomeAluno.route) {
+            HomeScreen(
+                navController = navController,
+                treinoViewModel = treinoViewModel,
+                viewModel = alunoPerfilViewModel,
+                temNotificacaoNova = temNotificacaoNova
+            )
+        }
+        composable(Screen.Aparelhos.route) {
+            AparelhosScreen(
+                navController = navController,
+                viewModel = aparelhosViewModel
+            )
+        }
+
+        composable(Screen.Treino.route) {
+            TreinoScreen(
+                navController = navController,
+                viewModel = treinoViewModel
+            )
+        }
         composable(Screen.Pagamentos.route) { PagamentosScreen(navController) }
-        composable(Screen.PerfilAluno.route) { PerfilAlunoScreen(navController = navController, onLogout = onLogout) }
+        composable(Screen.PerfilAluno.route) {
+            PerfilAlunoScreen(
+                navController = navController,
+                onLogout = onLogout,
+                viewModel = alunoPerfilViewModel
+            )
+        }
 
-        // 👇 SUA TELA DE AULAS DO ALUNO REGISTRADA!
-        composable(Screen.AulasAluno.route) { AulasAlunoScreen(navController = navController, alunoIdLogado = 5L) }
+        composable(Screen.AulasAluno.route) {
+            AulasAlunoScreen(
+                navController = navController,
+                viewModel = alunoPerfilViewModel,
+                alunoIdLogado = alunoIdReal
+            )
+        }
 
-        composable(Screen.HomeProfessor.route) { HomeProfessorScreen(navController) }
-        composable(Screen.Exercicios.route) { ExerciciosScreen(navController = navController, viewModel = exerciciosViewModel) }
-        composable(Screen.NovoExercicio.route) { CriarExercicioScreen(navController = navController, viewModel = exerciciosViewModel) }
-        composable(Screen.Fichas.route) { FichasScreenReal(navController = navController, viewModel = fichasViewModel, criarFichaViewModel = criarFichaViewModel) }
-        composable(Screen.NovaFicha.route) { CriarFichaScreen(navController = navController, viewModel = criarFichaViewModel) }
-        composable(Screen.EditarFicha.route) { CriarFichaScreen(navController = navController, viewModel = criarFichaViewModel) }
-        composable(Screen.Avaliacoes.route) { AvaliacoesScreen(navController = navController, viewModel = avaliacoesViewModel) }
-        composable(Screen.NovaAvaliacao.route) { CriarAvaliacaoScreen(navController = navController, viewModel = avaliacoesViewModel) }
+        composable(Screen.HomeProfessor.route) {
+            HomeProfessorScreen(
+                navController = navController,
+                alunosViewModel = alunosViewModel,
+                fichasViewModel = fichasViewModel,
+                avaliacoesViewModel = avaliacoesViewModel,
+                exerciciosViewModel = exerciciosViewModel
+            )
+        }
+        composable(Screen.Exercicios.route) {
+            ExerciciosScreen(
+                navController = navController,
+                viewModel = exerciciosViewModel
+            )
+        }
+        composable(Screen.NovoExercicio.route) {
+            CriarExercicioScreen(
+                navController = navController,
+                viewModel = exerciciosViewModel
+            )
+        }
+        composable(Screen.Fichas.route) {
+            FichasScreenReal(
+                navController = navController,
+                viewModel = fichasViewModel,
+                criarFichaViewModel = criarFichaViewModel
+            )
+        }
+        composable(Screen.NovaFicha.route) {
+            CriarFichaScreen(
+                navController = navController,
+                viewModel = criarFichaViewModel
+            )
+        }
+        composable(
+            route = "${Screen.EditarFicha.route}/{fichaId}"
+        ) { backStackEntry ->
+            val fichaId = backStackEntry.savedStateHandle
+                .get<String>("fichaId")
+                ?.toIntOrNull()
 
-        // 👇 SUAS TELAS DE AULAS DO PROFESSOR REGISTRADAS!
+            if (fichaId != null) {
+                EditarFichaScreen(
+                    navController = navController,
+                    viewModel = criarFichaViewModel, // Seu ViewModel compartilhado de fichas
+                    fichaId = fichaId
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
+        }
+
+        composable(
+            route = "${Screen.VisualizarFicha.route}/{fichaId}"
+        ) { backStackEntry ->
+            val fichaId = backStackEntry.savedStateHandle
+                .get<String>("fichaId")
+                ?.toIntOrNull()
+
+            if (fichaId != null) {
+                VisualizarFichaScreen(
+                    navController = navController,
+                    viewModel = criarFichaViewModel,
+                    fichaId = fichaId
+                )
+            } else {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
+        }
+
+        composable(Screen.Avaliacoes.route) {
+            AvaliacoesScreen(
+                navController = navController,
+                viewModel = avaliacoesViewModel
+            )
+        }
+        composable(Screen.NovaAvaliacao.route) {
+            CriarAvaliacaoScreen(
+                navController = navController,
+                viewModel = avaliacoesViewModel
+            )
+        }
+        composable(
+            route = "${Screen.EditarAvaliacao.route}/{avaliacaoId}"
+        ) { backStackEntry ->
+            val avaliacaoId = backStackEntry.savedStateHandle
+                .get<String>("avaliacaoId")
+                ?.toIntOrNull()
+
+            if (avaliacaoId != null) {
+                EditarAvaliacaoScreen(
+                    navController = navController,
+                    viewModel = avaliacoesViewModel,
+                    avaliacaoId = avaliacaoId
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
+        }
+
         composable(Screen.AulasProfessor.route) { AulasProfessorScreen(navController = navController) }
-        composable(Screen.UpsertAulaProfessor.route) { UpsertAulaScreen(navController = navController) }
-
+        composable(Screen.UpsertAulaProfessor.route) { UpsertAulaScreen(
+            navController = navController,
+            perfilViewModel = AlunoPerfilViewModel(),
+            viewModel = AulasColetivasViewModel()
+        ) }
         composable(Screen.HomeAdmin.route) { HomeAdminScreen(navController) }
         composable(Screen.AlunosAdmin.route) { AlunosAdminScreen(navController, viewModel = alunosViewModel) }
         composable(Screen.UnidadesAdmin.route) { UnidadesScreen() }
-        composable("telaPlanos") { org.smartgym.Screens.Adm.PlanosScreen(viewModel = planosViewModel) }
-        composable(Screen.MaquinasAdmin.route) { MaquinasAdminScreen(viewModel = maquinaViewModel) }
+        composable("telaPlanos") { PlanosScreen(viewModel = planosViewModel) }
         composable(Screen.MaquinasIotAdmin.route) { MaquinasIotAdminScreen(viewModel = maquinaIotViewModel) }
         composable(Screen.NovoAluno.route) { NovoAlunoScreen(navController, viewModel = alunosViewModel) }
 
-        composable(route = "${Screen.EditarAluno.route}/{alunoId}") { backStackEntry ->
-            val alunoId = backStackEntry.destination.route?.split("/")?.lastOrNull()?.toIntOrNull()
-            if (alunoId != null) { EditarAlunoScreen(alunoId = alunoId, navController = navController, viewModel = alunosViewModel) }
-            else { LaunchedEffect(Unit) { navController.popBackStack() } }
+        composable(
+            route = "${Screen.EditarAluno.route}/{alunoId}"
+        ) { backStackEntry ->
+            val alunoId = backStackEntry.savedStateHandle
+                .get<String>("alunoId")
+                ?.toIntOrNull()
+
+            if (alunoId != null) {
+                EditarAlunoScreen(
+                    alunoId = alunoId,
+                    navController = navController,
+                    viewModel = alunosViewModel
+                )
+            } else {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
         }
 
-        composable(Screen.ProfessoresAdmin.route) { ProfessoresAdminScreen(navController, viewModel = professoresViewModel) }
-        composable(Screen.NovoProfessor.route) { NovoProfessorScreen(navController, viewModel = professoresViewModel) }
+        composable(
+            route = "${Screen.EditarProfessor.route}/{professorId}"
+        ) { backStackEntry ->
+            val professorId = backStackEntry.savedStateHandle
+                .get<String>("professorId")
+                ?.toIntOrNull()
 
-        // 👇 ROTAS DE NOTIFICAÇÕES REGISTRADAS PERFEITAMENTE
+            if (professorId != null) {
+                EditarProfessorScreen(
+                    professorId = professorId,
+                    navController = navController,
+                    viewModel = professoresViewModel
+                )
+            } else {
+                println("ERRO: ID do professor não encontrado")
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            }
+        }
+
+        composable(Screen.ProfessoresAdmin.route) {
+            ProfessoresAdminScreen(
+                navController,
+                viewModel = professoresViewModel
+            )
+        }
+        composable(Screen.NovoProfessor.route) {
+            NovoProfessorScreen(
+                navController,
+                viewModel = professoresViewModel
+            )
+        }
+
         composable(Screen.Notificacoes.route) {
             NotificacoesScreen(
+                navController = navController,
                 viewModel = notificacoesViewModel,
                 isAdmin = userRole == UserRole.ADMIN,
                 onNavigateToCriar = {

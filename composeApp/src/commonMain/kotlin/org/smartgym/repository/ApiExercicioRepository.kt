@@ -19,7 +19,7 @@ class ApiExercicioRepository {
 
     suspend fun getAll(): List<Exercicio> = client.get(url()).body()
 
-    suspend fun getById(id: Long): Exercicio? = client.get(url("/$id")).body()
+    suspend fun getById(id: Int): Exercicio? = client.get(url("/$id")).body()
 
     suspend fun create(exercicio: Exercicio): Exercicio {
         val response = client.post(url()) {
@@ -29,7 +29,7 @@ class ApiExercicioRepository {
         return parseExercicioResponse(response, exercicio)
     }
 
-    suspend fun update(id: Long, exercicio: Exercicio): Exercicio {
+    suspend fun update(id: Int, exercicio: Exercicio): Exercicio {
         val response = client.put(url("/$id")) {
             contentType(ContentType.Application.Json)
             setBody(exercicio)
@@ -48,7 +48,7 @@ class ApiExercicioRepository {
         return fallback
     }
 
-    suspend fun delete(id: Long) = client.delete(url("/$id"))
+    suspend fun delete(id: Int) = client.delete(url("/$id"))
 
     suspend fun getByNome(nome: String): List<Exercicio> {
         val termo = nome.trim()
@@ -60,6 +60,6 @@ class ApiExercicioRepository {
         }
     }
 
-    suspend fun getByMaquina(maquinaId: Long): List<Exercicio> =
+    suspend fun getByMaquina(maquinaId: Int): List<Exercicio> =
         client.get(url("/maquina/$maquinaId")).body()
 }

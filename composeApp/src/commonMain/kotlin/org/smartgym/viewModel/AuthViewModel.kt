@@ -23,7 +23,7 @@ class AuthViewModel : ViewModel() {
     private val _state = MutableStateFlow<AuthState>(AuthState.Idle)
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
-    fun login(email: String, senha: String, onSuccess: (UserRole) -> Unit) {
+    fun login(email: String, senha: String, onSuccess: (UserRole, Boolean) -> Unit) {
         if (email.isBlank()) { _state.value = AuthState.Error("Informe seu email"); return }
         if (!email.contains("@")) { _state.value = AuthState.Error("Email inválido"); return }
         if (senha.isBlank()) { _state.value = AuthState.Error("Informe sua senha"); return }
@@ -40,7 +40,7 @@ class AuthViewModel : ViewModel() {
                 }
                 if (role != null) {
                     _state.value = AuthState.Success("Bem-vindo!")
-                    onSuccess(role)
+                    onSuccess(role, resultado.perfilCompleto)
                 } else {
                     _state.value = AuthState.Error(" Perfil desconhecido: ${resultado.papel}")
                 }

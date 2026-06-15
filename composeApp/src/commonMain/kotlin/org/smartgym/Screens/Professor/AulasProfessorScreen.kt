@@ -33,7 +33,6 @@ import org.smartgym.model.professor.AulaColetiva
 import org.smartgym.theme.SmartGymGreen
 import org.smartgym.viewModel.AgendamentosViewModel
 import org.smartgym.viewModel.AulasColetivasViewModel
-import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +46,7 @@ fun AulasProfessorScreen(
     val globalSnackbar = LocalSnackbar.current
 
     var aulaSelecionada by remember { mutableStateOf<AulaColetiva?>(null) }
-    val listaDeChamada by agendamentosViewModel.agendamentosDaAula.collectAsState()
+    val listaDeChamada by agendamentosViewModel.listaDeChamadaComNomes.collectAsState()
     val isCarregandoChamada by agendamentosViewModel.isLoading.collectAsState()
     var diaSelecionadoIndex by remember { mutableStateOf(0) }
     var exibirDialogoDelecao by remember { mutableStateOf(false) }
@@ -56,7 +55,7 @@ fun AulasProfessorScreen(
     val datePickerState = rememberDatePickerState()
 
     LaunchedEffect(Unit) {
-        aulasViewModel.carregarVisaoSemanal() // Sem data = Backend carrega "hoje" automaticamente
+        aulasViewModel.carregarVisaoSemanal() // Carrega dinamicamente na ViewModel
         launch { aulasViewModel.snackbarEvent.collectLatest { globalSnackbar.showSnackbar(it) } }
         launch { agendamentosViewModel.snackbarEvent.collectLatest { globalSnackbar.showSnackbar(it) } }
     }
@@ -110,7 +109,7 @@ fun AulasProfessorScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                val aulasDoDia = aulasDaSemana[diaSelecionadoIndex].aulas
+                val aulasDoDia = aulasDaSemana.getOrNull(diaSelecionadoIndex)?.aulas ?: emptyList()
 
                 LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (aulasDoDia.isEmpty()) {
@@ -138,7 +137,8 @@ fun AulasProfessorScreen(
                             Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column {
                                     Text(aula.nome, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colors.onBackground)
-                                    Text("Início: ${aula.dataHoraInicio.takeLast(8)}", fontSize = 14.sp, color = colors.onSurfaceVariant)
+                                    val horaLimpa = if (aula.dataHoraInicio.contains("T")) aula.dataHoraInicio.substringAfter("T").take(5) else aula.dataHoraInicio.takeLast(8)
+                                    Text("Início: $horaLimpa", fontSize = 14.sp, color = colors.onSurfaceVariant)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Icon(Icons.Default.Group, contentDescription = null, tint = SmartGymGreen)
@@ -159,8 +159,11 @@ fun AulasProfessorScreen(
                 TextButton(onClick = {
                     mostrarCalendario = false
                     datePickerState.selectedDateMillis?.let { millis ->
-                        val dataCompleta = Instant.fromEpochMilliseconds(millis).toString()
-                        val dataFormatada = dataCompleta.substringBefore("T")
+                        val dataFormatada = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                            .toString()
+
                         aulasViewModel.carregarVisaoSemanal(dataFormatada)
                         diaSelecionadoIndex = 0
                     }
@@ -198,17 +201,35 @@ fun AulasProfessorScreen(
                     Text("Total agendado: ${listaDeChamada.size} / ${aulaSelecionada?.capacidadeMaxima}", color = colors.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(Modifier.height(16.dp))
 
-                    if (isCarregandoChamada) CircularProgressIndicator(color = SmartGymGreen)
-                    else if (listaDeChamada.isEmpty()) Text("Nenhum aluno agendado ainda.", color = colors.onSurfaceVariant)
-                    else {
+                    if (isCarregandoChamada) {
+                        CircularProgressIndicator(color = SmartGymGreen)
+                    } else if (listaDeChamada.isEmpty()) {
+                        Text("Nenhum aluno agendado ainda.", color = colors.onSurfaceVariant)
+                    } else {
                         LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
                             items(listaDeChamada) { agendamento ->
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     Box(modifier = Modifier.size(10.dp).background(SmartGymGreen, shape = RoundedCornerShape(50)))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Matrícula do Aluno: #${agendamento.alunoId}", color = colors.onSurface)
+                                    Spacer(Modifier.width(12.dp))
+
+                                    Column {
+                                        Text(
+                                            text = "Aluno Matriculado",
+                                            color = colors.onSurface,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 15.sp
+                                        )
+                                        Text(
+                                            text = "Inscrição: #${agendamento.alunoId}",
+                                            color = colors.onSurfaceVariant,
+                                            fontSize = 13.sp
+                                        )
+                                    }
                                 }
-                                HorizontalDivider(color = colors.onSurfaceVariant.copy(alpha = 0.2f))
+                                HorizontalDivider(color = colors.onSurfaceVariant.copy(alpha = 0.15f))
                             }
                         }
                     }

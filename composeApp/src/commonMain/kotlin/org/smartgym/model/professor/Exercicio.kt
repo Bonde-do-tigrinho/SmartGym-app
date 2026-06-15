@@ -7,10 +7,10 @@ enum class TipoExercicio { LIVRE, MAQUINA, AEROBICO }
 
 @Serializable
 data class Exercicio(
-    val id: Long? = null,
+    val id: Int? = null,
     val nome: String,
     val descricao: String,
     val tipo: TipoExercicio,
     val grupoMuscular: String? = null,
-    val maquinaId: Long? = null
+    val maquinaId: Int? = null
 )

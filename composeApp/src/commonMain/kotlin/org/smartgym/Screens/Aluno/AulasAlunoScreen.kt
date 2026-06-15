@@ -1,6 +1,5 @@
 package org.smartgym.Screens.Aluno
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,27 +21,26 @@ import kotlinx.coroutines.launch
 import org.smartgym.theme.SmartGymGreen
 import org.smartgym.viewModel.AgendamentosViewModel
 import org.smartgym.viewModel.AulasColetivasViewModel
+import org.smartgym.viewModel.aluno.AlunoPerfilViewModel // 👈 Garanta esse import
 
 @Composable
 fun AulasAlunoScreen(
     navController: NavController,
-    alunoIdLogado: Long,
+    alunoIdLogado: Int,
+    viewModel: AlunoPerfilViewModel,
     aulasViewModel: AulasColetivasViewModel = viewModel { AulasColetivasViewModel() },
     agendamentosViewModel: AgendamentosViewModel = viewModel { AgendamentosViewModel() }
 ) {
     val colors = MaterialTheme.colorScheme
     val aulasDaSemana by aulasViewModel.aulasDaSemana.collectAsState()
     val isAgendando by agendamentosViewModel.isLoading.collectAsState()
-
-    // Lendo os IDs das aulas que já foram agendadas
     val aulasAgendadasIds by agendamentosViewModel.aulasAgendadasIds.collectAsState()
 
     var diaSelecionadoIndex by remember { mutableStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Dispara o carregamento das aulas E dos agendamentos ao abrir a tela
     LaunchedEffect(Unit) {
-        aulasViewModel.carregarVisaoSemanal("2026-05-26") // Data inicial de simulação
+        aulasViewModel.carregarVisaoSemanal(null)
         agendamentosViewModel.carregarAgendamentosDoAluno(alunoIdLogado)
 
         launch { aulasViewModel.snackbarEvent.collectLatest { snackbarHostState.showSnackbar(it) } }
@@ -124,25 +122,25 @@ fun AulasAlunoScreen(
                             ) {
                                 Column {
                                     Text(aula.nome, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colors.onBackground)
+                                    val horaLimpa = if (aula.dataHoraInicio.contains("T")) aula.dataHoraInicio.substringAfter("T").take(5) else aula.dataHoraInicio.takeLast(8)
                                     Text("Início: ${aula.dataHoraInicio.takeLast(8)}", fontSize = 14.sp, color = colors.onSurfaceVariant)
                                     Text("Vagas: ${aula.capacidadeMaxima}", fontSize = 12.sp, color = SmartGymGreen)
                                 }
 
                                 Button(
-                                    onClick = { agendamentosViewModel.realizarAgendamento(alunoIdLogado, aula.id!!) },
+                                    onClick = { agendamentosViewModel.realizarAgendamento(alunoIdLogado,
+                                        aula.id!!.toInt()
+                                    ) },
                                     colors = ButtonDefaults.buttonColors(
-                                        //  Muda a cor dependendo do status
                                         containerColor = if (jaEstaAgendado) Color.DarkGray else SmartGymGreen,
                                         contentColor = if (jaEstaAgendado) Color.LightGray else Color.Black
                                     ),
                                     shape = RoundedCornerShape(8.dp),
-                                    // Bloqueia o clique se já agendou ou se está carregando
                                     enabled = !isAgendando && !jaEstaAgendado
                                 ) {
                                     if (isAgendando) {
                                         CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.Black, strokeWidth = 2.dp)
                                     } else {
-                                        // Muda o texto do botão
                                         Text(if (jaEstaAgendado) "Agendado" else "Agendar", fontWeight = FontWeight.Bold)
                                     }
                                 }

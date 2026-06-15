@@ -16,7 +16,8 @@ data class LoginResponse(
     val role: String? = null,
     val nome: String? = null,
     val message: String? = null,
-    val mensagem: String? = null
+    val mensagem: String? = null,
+    val perfilCompleto: Boolean
 )
 
 @Serializable
@@ -32,7 +33,7 @@ data class RegisterRequest(
 data class AuthResponse(
     val sucesso: Boolean = true,
     val mensagem: String? = null,
-    val id: Long? = null,
+    val id: Int? = null,
     val email: String? = null
 )
 

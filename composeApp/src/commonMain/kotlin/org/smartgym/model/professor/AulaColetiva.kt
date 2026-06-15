@@ -4,9 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AulaColetiva(
-    val id: Long? = null,
+    val id: Int? = null,
     val nome: String,
-    val professorId: Long,
+    val professorId: Int,
     val capacidadeMaxima: Int,
     val dataHoraInicio: String,
     val dataHoraFim: String

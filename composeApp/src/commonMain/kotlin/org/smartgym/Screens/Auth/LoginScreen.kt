@@ -31,12 +31,11 @@ import org.smartgym.viewModel.AuthViewModel
 @Composable
 fun LoginScreen(
     navController: NavController? = null,
-    onLoginSuccess: ((UserRole) -> Unit)? = null,
+    onLoginSuccess: ((UserRole, Boolean) -> Unit)? = null,
     viewModel: AuthViewModel = remember { AuthViewModel() }
 ) {
     val colors = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val state by viewModel.state.collectAsState()
 
@@ -69,8 +68,8 @@ fun LoginScreen(
 
     val performLogin = {
         focusManager.clearFocus()
-        viewModel.login(email.trim(), senha) { role ->
-            onLoginSuccess?.invoke(role)
+        viewModel.login(email.trim(), senha) { role, perfilCompleto ->
+            onLoginSuccess?.invoke(role, perfilCompleto)
         }
     }
 
@@ -137,7 +136,6 @@ fun LoginScreen(
                     onValueChange = { senha = it },
                     placeholder = { Text("••••••••", color = colors.onSurfaceVariant) },
 
-                    // --- MÁGICA DO TECLADO AQUI ---
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         focusManager.clearFocus()
@@ -179,7 +177,7 @@ fun LoginScreen(
             Spacer(Modifier.height(24.dp))
 
             Button(
-                onClick = { performLogin() }, // Chama o login no botão
+                onClick = { performLogin() },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),

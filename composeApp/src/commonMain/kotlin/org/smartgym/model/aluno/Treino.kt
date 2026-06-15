@@ -9,7 +9,6 @@ data class Exercicio(
     val concluido: Boolean = false
 )
 
-// Representa os botões do topo (A, B, C) e agrupa os exercícios
 data class TreinoDia(
     val id: String,      // "A", "B" ou "C"
     val titulo: String,  // "Peito e Tríc"

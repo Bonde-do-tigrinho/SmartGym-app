@@ -23,19 +23,22 @@ import org.smartgym.LocalSnackbar
 import org.smartgym.model.professor.AulaColetiva
 import org.smartgym.theme.SmartGymGreen
 import org.smartgym.viewModel.AulasColetivasViewModel
+import org.smartgym.viewModel.aluno.AlunoPerfilViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpsertAulaScreen(
     navController: NavController,
+    perfilViewModel: AlunoPerfilViewModel,
     viewModel: AulasColetivasViewModel = viewModel { AulasColetivasViewModel() }
 ) {
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     val isLoading by viewModel.isLoading.collectAsState()
-    val globalSnackbar = LocalSnackbar.current // Puxa a tomada do Snackbar
+    val globalSnackbar = LocalSnackbar.current
+    val perfilProfessor by perfilViewModel.perfil.collectAsState()
 
-    val aulaIdParaEditar = navController.previousBackStackEntry?.savedStateHandle?.get<Long>("aulaIdParaEditar")
+    val aulaIdParaEditar = navController.previousBackStackEntry?.savedStateHandle?.get<Int>("aulaIdParaEditar")
     val isEdicao = aulaIdParaEditar != null
 
     var nome by remember { mutableStateOf("") }
@@ -44,7 +47,6 @@ fun UpsertAulaScreen(
     var horaInicio by remember { mutableStateOf("") }
     var horaFim by remember { mutableStateOf("") }
 
-    // Escuta os eventos da ViewModel e mostra na tela!
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collectLatest { message ->
             globalSnackbar.showSnackbar(message)
@@ -110,13 +112,16 @@ fun UpsertAulaScreen(
                         return@Button
                     }
                     val dataFormatadaIso = "${partesDaData[2]}-${partesDaData[1]}-${partesDaData[0]}"
+
+                    val professorIdReal = perfilProfessor?.id ?: 1
+
                     val novaAula = AulaColetiva(
                         id = if (isEdicao) aulaIdParaEditar else null,
                         nome = nome,
                         capacidadeMaxima = capacidadeMaxima.toIntOrNull() ?: 0,
                         dataHoraInicio = "${dataFormatadaIso}T${horaInicio}:00",
                         dataHoraFim = "${dataFormatadaIso}T${horaFim}:00",
-                        professorId = 3L
+                        professorId = professorIdReal
                     )
 
                     val onSuccessCallback: () -> Unit = {

@@ -66,16 +66,22 @@ private val InterFont @Composable get() = FontFamily(
 
 @Composable
 fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewModel) {
-    val searchQuery = remember { mutableStateOf("") }
-    val avaliacoes by viewModel.avaliacoes.collectAsState()
+    val searchQuery = viewModel.searchQuery.collectAsState()
     var avaliacaoToDelete by remember { mutableStateOf<Avaliacao?>(null) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val avaliacoesRaw by viewModel.avaliacoes.collectAsState()
 
-    // Carrega na entrada inicial e ao voltar desta tela (ex: após criar/editar)
     LaunchedEffect(navBackStackEntry) {
         if (navBackStackEntry?.destination?.route == Screen.Avaliacoes.route) {
             viewModel.loadAll()
         }
+    }
+
+    LaunchedEffect(currentBackStackEntry) {
+        println("🔄 [UI] Tela de avaliações focada! Atualizando dados...")
+        viewModel.carregarAvaliacoes()
+        viewModel.loadAlunosResumo()
     }
 
     Box(
@@ -91,6 +97,9 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
 
+            val avaliacoesFiltradas = remember(avaliacoesRaw, searchQuery.value){
+                viewModel.filteredAvaliacoes()
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -139,10 +148,7 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
 
                     TextField(
                         value = searchQuery.value,
-                        onValueChange = {
-                            searchQuery.value = it
-                            if (it.isBlank()) viewModel.loadAll() else viewModel.loadByNomeAluno(it)
-                        },
+                        onValueChange = { viewModel.updateSearchQuery(it)},
                         placeholder = {
                             Text(
                                 "Buscar avaliacões...",
@@ -178,13 +184,12 @@ fun AvaliacoesScreen(navController: NavController, viewModel: AvaliacoesViewMode
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                items(avaliacoes, key = { it.id }) { avaliacao ->
+                items(avaliacoesFiltradas, key = { it.id }) { avaliacao ->
                     AvaliacaoCard(
                         avaliacao = avaliacao,
                         onEdit = {
-                            if (it.id != 0) {
-                                viewModel.loadById(it.id)
-                                navController.navigate(Screen.NovaAvaliacao.route)
+                            if (avaliacao.id != 0) {
+                                navController.navigate("${Screen.EditarAvaliacao.route}/${avaliacao.id}")
                             }
                         },
                         onDelete = { avaliacaoToDelete = it }

@@ -2,14 +2,6 @@ package org.smartgym.viewModel.Adm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.ktor.client.call.body
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,14 +10,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.smartgym.model.Adm.Usuario
-import org.smartgym.network.ApiClient
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import org.smartgym.repository.ApiProfessorRepository
 
-class ProfessoresViewModel : ViewModel() {
-
-    private val client = ApiClient.client
+class ProfessoresViewModel(
+    private val repository: ApiProfessorRepository
+) : ViewModel() {
 
     private val _professores = MutableStateFlow<List<Usuario>>(emptyList())
     val professores: StateFlow<List<Usuario>> = _professores.asStateFlow()
@@ -42,7 +34,7 @@ class ProfessoresViewModel : ViewModel() {
     val professoresFiltrados: StateFlow<List<Usuario>> = combine(_professores, _searchQuery) { lista, query ->
         if (query.isBlank()) lista
         else lista.filter { it.nome.contains(query, ignoreCase = true) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _professores.value)
+    }.stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5000), _professores.value)
 
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
@@ -50,7 +42,9 @@ class ProfessoresViewModel : ViewModel() {
     private val _navigationEvent = MutableSharedFlow<Unit>()
     val navigationEvent: SharedFlow<Unit> = _navigationEvent.asSharedFlow()
 
-    // BLOCO INIT REMOVIDO DAQUI! 🚀
+    init {
+        carregarProfessores()
+    }
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
@@ -60,12 +54,10 @@ class ProfessoresViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val result: List<Usuario> = client
-                    .get(ApiClient.getUrl("/api/professores"))
-                    .body()
+                val result = repository.getAll()
                 _professores.value = result
             } catch (e: Exception) {
-                println("ERRO AO CARREGAR PROFESSORES: ${e.message}")
+                println("🚨 ERRO AO CARREGAR PROFESSORES: ${e.message}")
                 _errorMessage.value = "Erro ao carregar professores: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -97,16 +89,7 @@ class ProfessoresViewModel : ViewModel() {
                     planoValor = null
                 )
 
-                val url = ApiClient.getUrl("/api/professores")
-                println("ENVIANDO PARA: $url")
-                println("DADOS: $novoProfessor")
-
-                val response = client.post(url) {
-                    contentType(ContentType.Application.Json)
-                    setBody(novoProfessor)
-                }
-
-                println("STATUS RESPONSE: ${response.status}")
+                repository.create(novoProfessor)
 
                 carregarProfessores()
                 _snackbarEvent.emit("Professor cadastrado com sucesso!")
@@ -125,7 +108,7 @@ class ProfessoresViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                client.delete(ApiClient.getUrl("/api/professores/$id"))
+                repository.delete(id)
                 carregarProfessores()
                 _snackbarEvent.emit("Professor deletado com sucesso!")
             } catch (e: Exception) {
@@ -140,10 +123,7 @@ class ProfessoresViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                client.put(ApiClient.getUrl("/api/professores/${usuario.id}")) {
-                    contentType(ContentType.Application.Json)
-                    setBody(usuario)
-                }
+                usuario.id?.let { repository.update(it, usuario) }
 
                 carregarProfessores()
                 _snackbarEvent.emit("Professor atualizado com sucesso!")

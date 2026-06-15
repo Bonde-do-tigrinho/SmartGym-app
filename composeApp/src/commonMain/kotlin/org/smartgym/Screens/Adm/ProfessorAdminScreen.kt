@@ -40,6 +40,10 @@ fun ProfessoresAdminScreen(
 
     val horizontalScrollState = rememberScrollState()
 
+    LaunchedEffect(Unit){
+        viewModel.carregarProfessores()
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()

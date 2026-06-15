@@ -9,5 +9,8 @@ interface AvaliacaoRepository {
     suspend fun update(id: Int, avaliacao: Avaliacao)
     suspend fun delete(id: Int)
     suspend fun getByNomeAluno(nomeAluno: String): List<Avaliacao>
+
+    suspend fun getAvaliacoesProfessor(): List<Avaliacao>
+
 }
 

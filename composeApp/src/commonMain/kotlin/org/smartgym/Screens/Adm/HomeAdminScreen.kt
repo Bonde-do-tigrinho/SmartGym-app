@@ -94,6 +94,8 @@ fun HomeAdminScreen(
     val chartData by viewModel.chartData.collectAsState()
     val gradientItems by viewModel.gradientItems.collectAsState()
     val scrollState = rememberScrollState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val erro by viewModel.erro.collectAsState()
 
     Column(
         modifier = modifier
@@ -116,16 +118,40 @@ fun HomeAdminScreen(
             )
         }
 
-        kpiItems.forEach { item ->
-            KpiCard(
-                title = item.title,
-                subtitle = item.subtitle,
-                value = item.value,
-                badgeValue = item.badgeValue,
-                icon = item.icon,
-                iconColor = item.iconColor,
-                isPositive = item.isPositive
-            )
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (erro != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(erro!!, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { viewModel.carregarDashboard() }) {
+                        Text("Tentar novamente")
+                    }
+                }
+            }
+        } else {
+
+            kpiItems.forEach { item ->
+                KpiCard(
+                    title = item.title,
+                    subtitle = item.subtitle,
+                    value = item.value,
+                    badgeValue = item.badgeValue,
+                    icon = item.icon,
+                    iconColor = item.iconColor,
+                    isPositive = item.isPositive
+                )
+            }
         }
 
         RevenueBarChart(data = chartData)

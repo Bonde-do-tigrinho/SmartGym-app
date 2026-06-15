@@ -16,15 +16,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.StateFlow
+import org.smartgym.Screen
 import org.smartgym.viewModel.aluno.AparelhosViewModel
+import org.smartgym.viewModel.aluno.TreinoViewModel
 
 @Composable
-fun AparelhosScreen(navController: NavController, viewModel: AparelhosViewModel) {
+fun AparelhosScreen(
+    navController: NavController,
+    viewModel: AparelhosViewModel = viewModel { AparelhosViewModel() }
+) {
     val colors = MaterialTheme.colorScheme
-    val machines by viewModel.machines.collectAsState()
+    val machines by viewModel.maquinasIot.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val categories = listOf("Todos", "Peito", "Costas", "Pernas")
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.carregarMaquinasIot()
+            kotlinx.coroutines.delay(3000L)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -68,17 +82,19 @@ fun AparelhosScreen(navController: NavController, viewModel: AparelhosViewModel)
 
         Spacer(Modifier.height(16.dp))
 
-        // Lista de Cards
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            val filteredMachines = if (selectedCategory == "Todos") machines
-            else machines.filter { it.category == selectedCategory }
+            val filteredMachines = if (selectedCategory == "Todos") {
+                machines
+            } else {
+                machines.filter { it.localizacao.contains(selectedCategory, ignoreCase = true) }
+            }
 
             items(filteredMachines) { machine ->
-                AparelhoCard(machine)
+                AparelhoCard(maquinaIot = machine)
             }
         }
     }
