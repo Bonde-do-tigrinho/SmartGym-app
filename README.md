@@ -78,3 +78,36 @@ cd SmartGym-App
 ```
 
 **Após o comando terminar com sucesso (BUILD SUCCESSFUL), abra os aplicativos do celular/emulador e clique no ícone do SmartGym para iniciar.**
+
+## 🤝 Divisão de Responsabilidades por Integrante (Front-end)
+
+* **Gabriel Kendi Zanon Takeda**:
+  * Componentização de layouts reutilizáveis (botões de ação customizados, campos de texto padronizados e modais de carregamento).
+  * Acoplamento e estilização dos Cards de listagem para exibição detalhada de múltiplos campos por entidade (CRUDs).
+  * Implementação da lógica de limpeza de dados de entrada na camada de visualização (funções para limpar campos).
+
+* **Joao Gabriel Silva Maximiano**:
+  * Escrita de massa de dados e mocks locais em Kotlin para validação de layout antes da integração com a API.
+  * Validações de regras de negócios na interface gráfica (limitação de caracteres, tratamento de campos nulos e campos obrigatórios).
+  * Revisão da acessibilidade visual dos componentes, incluindo descrições de conteúdo (`contentDescription`) para ícones e botões.
+
+* **Leandro Rodrigues de Melo**:
+  * Desenvolvimento visual das telas de listagem de alunos, professores e agendamentos utilizando LazyColumn no Jetpack Compose.
+  * Implementação dos botões e gatilhos visuais para as ações de exclusão (ícone de lixeira) e edição (ícone de lápis) nos cards.
+  * Tratamento de estados visuais de erro na UI caso a comunicação de rede com o Ktor falhe.
+
+* **Miguel Lemos Ramos**:
+  * Desenvolvimento da interface gráfica das telas de Formulário para os CRUDs de Fichas de Treino e Cadastro de Equipamentos.
+  * Criação dos fluxos de entrada de dados com restrição de tipos (inputs numéricos para peso/repetições e seletores de data).
+  * Acoplamento estético do guia de cores, tipografia (Inter) e aplicação do tema Dark/Light através do `MaterialTheme`.
+
+* **Nicolas Kenzo Yanase**:
+  * Configuração da árvore de rotas e grafos de navegação utilizando a biblioteca Compose Navigation.
+  * Implementação do isolamento de navegação em dois níveis (Menu Geral/Tabs vs. Fluxo interno de pilha entre Listas e Formulários).
+  * Desenvolvimento das telas de autenticação inicial (Login e Registro de conta) aplicando ocultamento e mascaramento nativo de senhas.
+
+* **Raul dos Santos Araujo**:
+  * Estruturação e arquitetura da camada de comunicação assíncrona baseada em `StateFlow` e ciclo de vida de ViewModels.
+  * Implementação dos repositórios remotos HTTP (`ApiAvaliacaoRepository`, `ApiAgendamentosRepository`, etc.) utilizando o Ktor Client.
+  * Amarração lógica das funções do CRUD nas ViewModels para disparar requisições `POST`, `PUT`, `GET` e `DELETE`.
+  * Criação do fluxo de sincronia automática e reativa para forçar o recarregamento imediato das listas de dados da tela após edições ou exclusões.
